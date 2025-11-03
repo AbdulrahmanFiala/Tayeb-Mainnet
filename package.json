@@ -1,0 +1,36 @@
+{
+  "name": "tayeb-moonbeam",
+  "version": "1.0.0",
+  "description": "Sharia-compliant trading platform on Moonbeam",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network moonbase"
+  },
+  "keywords": [
+    "sharia",
+    "defi",
+    "moonbeam",
+    "solidity",
+    "etf",
+    "dca"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@types/node": "^20.10.0",
+    "hardhat": "^2.19.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@moonbeam-network/api-augment": "^0.2700.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "@chainlink/contracts": "^0.8.0",
+    "dotenv": "^16.3.1"
+  }
+}
+
