@@ -94,7 +94,7 @@ contract SimplePair is ERC20, ReentrancyGuard {
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
             liquidity = sqrt(amount0 * amount1) - MINIMUM_LIQUIDITY;
-            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            _mint(address(1), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens to dead address
         } else {
             liquidity = min(
                 (amount0 * _totalSupply) / _reserve0,
@@ -258,5 +258,6 @@ contract SimplePair is ERC20, ReentrancyGuard {
             z = 1;
         }
     }
+
 }
 
