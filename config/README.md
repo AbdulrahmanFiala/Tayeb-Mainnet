@@ -21,16 +21,33 @@ Stores all deployed contract addresses (AMM + Main contracts). This file:
 
 ## Coin Management Workflow
 
-### Contract is Source of Truth
+For detailed instructions on adding/removing coins, syncing JSON files, and managing the coin registry, see [USAGE_EXAMPLES.md](../USAGE_EXAMPLES.md#coin-management-workflow).
 
-The ShariaCompliance contract is the authoritative source for coin registrations. When you add/remove coins on-chain:
+## How Scripts Update Config Files
 
-1. **Owner calls contract functions:**
-   - `registerShariaCoin()` - Add new coin
-   - `removeShariaCoin()` - Remove coin (sets permissible: false in JSON)
-   - `updateComplianceStatus()` - Update coin status
+### `deploy-tokens.ts`
+- Deploys MockERC20 tokens
+- Updates `halaCoins.json`: Adds token addresses to `addresses.moonbase`
+- Updates `deployedContracts.json`: Adds addresses to `tokens` section
 
-2. **Sync JSON from contract:**
-   - Manual: Run `npm run sync:coins`
-   - Auto: Run `npm run listen:events` (continuous listener)
+### `deploy-amm-core.ts`
+- Deploys SimpleFactory and SimpleRouter
+- Updates `deployedContracts.json`: Adds addresses to `amm` section (factory, router, weth)
 
+### `create-pairs.ts`
+- Creates liquidity pairs via Factory
+- Updates `deployedContracts.json`: Adds pair addresses to `pairs` section (e.g., "BTC_USDC": "0x...")
+
+### `deploy-core.ts`
+- Deploys ShariaCompliance, ShariaSwap, ShariaDCA
+- Registers coins from `halaCoins.json` to ShariaCompliance contract
+- Updates `deployedContracts.json`: Adds addresses to `main` section
+
+### `sync-coins-from-contract.ts`
+- Reads all coins from ShariaCompliance contract
+- Updates `halaCoins.json`: Syncs coin data, sets `permissible` flags
+- Updates `deployedContracts.json`: Syncs token addresses
+
+### `listen-coin-events.ts`
+- Listens to contract events (CoinRegistered, CoinRemoved, CoinUpdated)
+- Automatically updates both JSON files when events occur

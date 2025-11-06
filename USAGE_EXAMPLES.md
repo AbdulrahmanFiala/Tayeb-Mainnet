@@ -5,6 +5,7 @@ This document contains detailed code examples for integrating with the Tayeb pla
 ## 📋 Table of Contents
 
 - [Post-Deployment Setup](#post-deployment-setup)
+- [Coin Management Workflow](#coin-management-workflow)
 - [Executing Swaps](#executing-swaps)
 - [Creating DCA Orders](#creating-dca-orders)
 - [Setting Up Chainlink Automation](#setting-up-chainlink-automation)
@@ -59,6 +60,90 @@ function useShariaSwap() {
 
   return { provider, shariaSwap };
 }
+```
+
+## Coin Management Workflow
+
+### Contract is Source of Truth
+
+The ShariaCompliance contract is the authoritative source for coin registrations. When you add/remove coins on-chain:
+
+**1. Owner calls contract functions:**
+```solidity
+// Add coin
+shariaCompliance.registerShariaCoin("NEW", "New Token", "NEW", "Compliance reason");
+
+// Remove coin
+shariaCompliance.removeShariaCoin("OLD");
+
+// Update status
+shariaCompliance.updateComplianceStatus("TOKEN", false, "Reason for removal");
+```
+
+**2. Sync JSON from contract:**
+
+**Manual Sync:**
+```bash
+npm run sync:coins
+```
+- Reads all coins from contract
+- Updates `halaCoins.json` to match contract state
+- Adds new coins, marks removed ones as `permissible: false`
+- Updates token addresses in `deployedContracts.json`
+
+**Auto Sync (Continuous):**
+```bash
+npm run listen:events
+```
+- Listens to `CoinRegistered`, `CoinRemoved`, `CoinUpdated` events
+- Automatically updates JSON files when events occur
+- Runs continuously (Press Ctrl+C to stop)
+
+### Permissible Flag
+
+- `permissible: true` - Coin is registered and verified in contract
+- `permissible: false` - Coin removed from contract (kept in JSON for history)
+
+### Adding New Coins
+
+**Method 1: On-Chain (Recommended)**
+1. Deploy token contract (if needed): `npm run deploy:tokens`
+2. Owner calls `registerShariaCoin()` on contract
+3. Run `npm run sync:coins` (or use listener)
+4. JSON automatically updated
+
+**Method 2: Via JSON First**
+1. Add coin to `halaCoins.json`
+2. Deploy token: `npm run deploy:tokens` (deploys new token)
+3. Create pairs: `npm run deploy:pairs` (creates pairs for new token)
+4. Run `npm run deploy:core` (registers new coin in ShariaCompliance)
+5. Add liquidity: `npx hardhat run scripts/addLiquidity.ts --network moonbase` (if needed)
+
+### Code Example: Register Coin from Frontend
+
+```typescript
+import deployedContracts from './config/deployedContracts.json';
+import ShariaComplianceABI from './artifacts/contracts/ShariaCompliance.sol/ShariaCompliance.json';
+
+const shariaCompliance = new ethers.Contract(
+  deployedContracts.main.shariaCompliance,
+  ShariaComplianceABI.abi,
+  signer // Owner account
+);
+
+// Register a new coin
+const tx = await shariaCompliance.registerShariaCoin(
+  "NEW",
+  "New Token",
+  "NEW",
+  "Compliance reason"
+);
+
+await tx.wait();
+console.log("Coin registered!");
+
+// Then sync JSON files
+// Run: npm run sync:coins
 ```
 
 ## Executing Swaps

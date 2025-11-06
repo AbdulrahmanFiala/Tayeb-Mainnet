@@ -86,13 +86,11 @@ This will deploy to Moonbase Alpha:
 The deployment script automatically:
 1. Deploys the custom AMM infrastructure
 2. Deploys all Initial Hala Coin tokens
-3. Creates token pairs (each coin with USDT and USDC = 28 pairs total)
+3. Creates token pairs
 4. Mints mock tokens to deployer
 5. Registers all coins from `config/halaCoins.json` in ShariaCompliance
-6. Registers token addresses in ShariaSwap and ShariaDCA
-7. **Saves all addresses to JSON config files** (frontend-ready)
+6. **Saves all addresses to JSON config files** (frontend-ready)
 
-**All addresses are saved automatically!** Check `config/deployedContracts.json` and `config/halaCoins.json`.
 
 ### 7. Add Liquidity (Required)
 
@@ -104,17 +102,10 @@ npx hardhat run scripts/addLiquidity.ts --network moonbase
 
 This will:
 - Read addresses from JSON configs automatically (no manual editing!)
-- Add liquidity to all pairs (each Initial Hala Coin with USDT and USDC)
+- Add liquidity to all pairs (each non-stablecoin with USDC, plus USDC/USDT pair)
 - Enable token swaps across all pairs
 
 ## 📋 Post-Deployment
-
-✅ **All addresses are automatically saved!** Check `config/deployedContracts.json` and `config/halaCoins.json`.
-
-For detailed information on:
-- **Accessing deployed addresses**: See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md)
-- **Coin management**: See [DEPLOYMENT_WORKFLOW.md](./DEPLOYMENT_WORKFLOW.md#coin-management-contract-driven) or [config/README.md](./config/README.md)
-- **Frontend integration**: See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md)
 
 ## 🔍 Verify Contracts (Optional)
 
@@ -128,38 +119,3 @@ npm run verify:all
 > **Note**: Get your API key from [etherscan.io/mapidashboard](https://etherscan.io/apidashboard) and add it to `.env` as `ETHERSCAN_API_KEY`.
 
 For detailed verification information and troubleshooting, see [DEPLOYMENT_WORKFLOW.md](./DEPLOYMENT_WORKFLOW.md#verification).
-
-
-## 🛠️ Development Workflow
-
-```bash
-# Compile contracts
-npm run compile
-
-# Run tests
-npm test
-
-# Deploy to testnet
-npm run deploy:testnet
-
-# Deploy to mainnet (when ready)
-npm run deploy:testnet --network moonbeam
-
-# Start local node (for testing)
-npx hardhat node
-
-# Deploy to local node
-npm run deploy --network localhost
-```
-
-## 📚 Next Steps
-
-- **Usage Examples**: See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md) for code examples and integration guides
-- **Deployment Details**: See [DEPLOYMENT_WORKFLOW.md](./DEPLOYMENT_WORKFLOW.md) for deployment architecture and advanced topics
-- **Configuration**: See [config/README.md](./config/README.md) for config file details
-- **Full Documentation**: See [README.md](./README.md) for comprehensive platform overview
-
-## 📚 Resources
-
-- **Moonbeam Docs**: https://docs.moonbeam.network/
-- **Hardhat Docs**: https://hardhat.org/docs

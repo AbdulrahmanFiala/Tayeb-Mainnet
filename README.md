@@ -150,7 +150,7 @@ For detailed setup instructions, troubleshooting, and post-deployment steps, ref
    - See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md) for detailed code examples
    - Includes: swaps, DCA orders, frontend integration, error handling
 
-For coin management, see [config/README.md](./config/README.md).
+For coin management, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#coin-management-workflow).
 
 ## 🌐 Moonbeam Network Details
 
