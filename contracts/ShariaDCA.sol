@@ -8,6 +8,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "./ShariaCompliance.sol";
 import "./interfaces/IDEXRouter.sol";
+import "./interfaces/IWETH.sol";
+import "./libraries/SwapPathBuilder.sol";
+import "./testnet/SimpleFactory.sol";
 
 /**
  * @title ShariaDCA
@@ -26,6 +29,9 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
 
     /// @notice DEX router
     IDEXRouter public dexRouter;
+
+    /// @notice Factory for checking pair existence
+    SimpleFactory public immutable factory;
 
     /// @notice WETH address (Wrapped DEV)
     address public immutable WETH;
@@ -54,7 +60,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
     struct DCAOrder {
         uint256 id;
         address owner;
-        string targetSymbol;
+        address sourceToken;      // address(0) for DEV, token address for ERC20
         address targetToken;
         uint256 amountPerInterval;
         uint256 interval;
@@ -73,7 +79,8 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
     event DCAOrderCreated(
         uint256 indexed orderId,
         address indexed owner,
-        string targetSymbol,
+        address sourceToken,
+        address targetToken,
         uint256 amountPerInterval,
         uint256 interval,
         uint256 totalIntervals
@@ -119,10 +126,12 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
     constructor(
         address _shariaCompliance,
         address _dexRouter,
+        address _factory,
         address _weth
     ) Ownable(msg.sender) {
         shariaCompliance = ShariaCompliance(_shariaCompliance);
         dexRouter = IDEXRouter(_dexRouter);
+        factory = SimpleFactory(_factory);
         WETH = _weth;
     }
 
@@ -143,35 +152,30 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
     // ============================================================================
 
     /**
-     * @notice Create a new DCA order
-     * @param targetSymbol Target token symbol
+     * @notice Create a new DCA order with native DEV
+     * @param targetToken Target token address
      * @param amountPerInterval Amount to invest per interval (in wei)
      * @param intervalSeconds Time between executions (in seconds)
      * @param totalIntervals Total number of intervals
      * @return orderId Created order ID
      */
-    function createDCAOrder(
-        string memory targetSymbol,
+    function createDCAOrderWithDEV(
+        address targetToken,
         uint256 amountPerInterval,
         uint256 intervalSeconds,
         uint256 totalIntervals
     ) external payable nonReentrant returns (uint256) {
-        if (intervalSeconds < MIN_INTERVAL || intervalSeconds > MAX_INTERVAL) {
-            revert InvalidInterval();
-        }
         if (amountPerInterval == 0 || totalIntervals == 0) {
             revert InvalidAmount();
         }
 
-        // Validate Sharia compliance
+        // Validate target token is Sharia compliant
+        string memory targetSymbol = shariaCompliance.getSymbolByAddress(targetToken);
+        if (bytes(targetSymbol).length == 0) {
+            revert TokenNotRegistered();
+        }
         if (!shariaCompliance.isShariaCompliant(targetSymbol)) {
             revert ShariaCompliance.NotShariaCompliant(targetSymbol);
-        }
-
-        // Get token address from ShariaCompliance
-        address targetToken = shariaCompliance.getTokenAddress(targetSymbol);
-        if (targetToken == address(0)) {
-            revert TokenNotRegistered();
         }
 
         // Check deposit
@@ -186,7 +190,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
         DCAOrder storage order = dcaOrders[orderId];
         order.id = orderId;
         order.owner = msg.sender;
-        order.targetSymbol = targetSymbol;
+        order.sourceToken = address(0);  // address(0) indicates DEV
         order.targetToken = targetToken;
         order.amountPerInterval = amountPerInterval;
         order.interval = intervalSeconds;
@@ -199,7 +203,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
 
         userOrders[msg.sender].push(orderId);
 
-        // Refund excess
+        // Refund excess DEV
         if (msg.value > totalRequired) {
             (bool success, ) = msg.sender.call{value: msg.value - totalRequired}("");
             require(success, "Refund failed");
@@ -208,7 +212,82 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
         emit DCAOrderCreated(
             orderId,
             msg.sender,
-            targetSymbol,
+            address(0),
+            targetToken,
+            amountPerInterval,
+            intervalSeconds,
+            totalIntervals
+        );
+
+        return orderId;
+    }
+
+    /**
+     * @notice Create a new DCA order with ERC20 tokens
+     * @param sourceToken Source token address
+     * @param targetToken Target token address
+     * @param amountPerInterval Amount to invest per interval (in wei)
+     * @param intervalSeconds Time between executions (in seconds)
+     * @param totalIntervals Total number of intervals
+     * @return orderId Created order ID
+     */
+    function createDCAOrderWithToken(
+        address sourceToken,
+        address targetToken,
+        uint256 amountPerInterval,
+        uint256 intervalSeconds,
+        uint256 totalIntervals
+    ) external nonReentrant returns (uint256) {
+        if (amountPerInterval == 0 || totalIntervals == 0) {
+            revert InvalidAmount();
+        }
+
+        // Validate source token is Sharia compliant
+        string memory sourceSymbol = shariaCompliance.getSymbolByAddress(sourceToken);
+        if (bytes(sourceSymbol).length == 0) {
+            revert TokenNotRegistered();
+        }
+        if (!shariaCompliance.isShariaCompliant(sourceSymbol)) {
+            revert ShariaCompliance.NotShariaCompliant(sourceSymbol);
+        }
+
+        // Validate target token is Sharia compliant
+        string memory targetSymbol = shariaCompliance.getSymbolByAddress(targetToken);
+        if (bytes(targetSymbol).length == 0) {
+            revert TokenNotRegistered();
+        }
+        if (!shariaCompliance.isShariaCompliant(targetSymbol)) {
+            revert ShariaCompliance.NotShariaCompliant(targetSymbol);
+        }
+
+        // Transfer tokens from user upfront
+        uint256 totalRequired = amountPerInterval * totalIntervals;
+        IERC20(sourceToken).safeTransferFrom(msg.sender, address(this), totalRequired);
+
+        // Create order
+        uint256 orderId = nextOrderId++;
+        
+        DCAOrder storage order = dcaOrders[orderId];
+        order.id = orderId;
+        order.owner = msg.sender;
+        order.sourceToken = sourceToken;
+        order.targetToken = targetToken;
+        order.amountPerInterval = amountPerInterval;
+        order.interval = intervalSeconds;
+        order.intervalsCompleted = 0;
+        order.totalIntervals = totalIntervals;
+        order.nextExecutionTime = block.timestamp + intervalSeconds;
+        order.startTime = block.timestamp;
+        order.isActive = true;
+        order.exists = true;
+
+        userOrders[msg.sender].push(orderId);
+
+        emit DCAOrderCreated(
+            orderId,
+            msg.sender,
+            sourceToken,
+            targetToken,
             amountPerInterval,
             intervalSeconds,
             totalIntervals
@@ -228,14 +307,49 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
         if (!order.isActive) revert OrderInactive();
         if (block.timestamp < order.nextExecutionTime) revert OrderNotReady();
 
-        // Execute swap
-        uint256 amountOut = _swapGLMRForToken(
+        // Prepare swap
+        address tokenIn;
+        uint256 amountIn = order.amountPerInterval;
+        
+        // Handle source token (DEV or ERC20)
+        if (order.sourceToken == address(0)) {
+            // Wrap DEV to WETH
+            IWETH(WETH).deposit{value: amountIn}();
+            tokenIn = WETH;
+        } else {
+            // Use ERC20 token directly
+            tokenIn = order.sourceToken;
+        }
+
+        // Approve router
+        IERC20(tokenIn).forceApprove(address(dexRouter), amountIn);
+
+        // Get USDC address for routing
+        address usdc = shariaCompliance.getTokenAddress("USDC");
+        
+        // Build optimal swap path using library
+        address[] memory path = SwapPathBuilder.buildSwapPath(
+            address(factory),
+            tokenIn,
             order.targetToken,
-            order.amountPerInterval,
-            0, // No slippage protection for DCA
-            block.timestamp + 15 minutes,
-            order.owner
+            usdc
         );
+
+        // Execute swap
+        uint256[] memory amounts;
+        try dexRouter.swapExactTokensForTokens(
+            amountIn,
+            0, // No slippage protection for DCA
+            path,
+            order.owner,
+            block.timestamp + 15 minutes
+        ) returns (uint256[] memory _amounts) {
+            amounts = _amounts;
+        } catch {
+            revert SwapFailed();
+        }
+
+        uint256 amountOut = amounts[amounts.length - 1];
 
         // Update order
         order.intervalsCompleted++;
@@ -276,8 +390,14 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
 
         // Refund
         if (refundAmount > 0) {
-            (bool success, ) = msg.sender.call{value: refundAmount}("");
-            require(success, "Refund failed");
+            if (order.sourceToken == address(0)) {
+                // Refund DEV
+                (bool success, ) = msg.sender.call{value: refundAmount}("");
+                require(success, "Refund failed");
+            } else {
+                // Refund ERC20
+                IERC20(order.sourceToken).safeTransfer(msg.sender, refundAmount);
+            }
         }
 
         emit DCAOrderCancelled(orderId, msg.sender);
@@ -376,50 +496,6 @@ contract ShariaDCA is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
         return count;
     }
 
-    // ============================================================================
-    // INTERNAL FUNCTIONS
-    // ============================================================================
-
-    /**
-     * @notice Swap GLMR for token
-     * @return amountOut Amount received
-     */
-    function _swapGLMRForToken(
-        address tokenOut,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        uint256 deadline,
-        address recipient
-    ) private returns (uint256 amountOut) {
-        // Wrap DEV to WETH
-        (bool success, ) = WETH.call{value: amountIn}("");
-        if (!success) revert SwapFailed();
-
-        // Approve router
-        IERC20(WETH).forceApprove(address(dexRouter), amountIn);
-
-        // Build path
-        address[] memory path = new address[](2);
-        path[0] = WETH;
-        path[1] = tokenOut;
-
-        // Execute swap
-        uint256[] memory amounts;
-        try dexRouter.swapExactTokensForTokens(
-            amountIn,
-            minAmountOut,
-            path,
-            recipient,
-            deadline
-        ) returns (uint256[] memory _amounts) {
-            amounts = _amounts;
-            amountOut = amounts[amounts.length - 1];
-        } catch {
-            revert SwapFailed();
-        }
-
-        return amountOut;
-    }
 
     // ============================================================================
     // EMERGENCY FUNCTIONS

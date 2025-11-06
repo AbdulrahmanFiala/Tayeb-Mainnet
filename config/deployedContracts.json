@@ -1,7 +1,7 @@
 {
   "network": "moonbase",
   "version": "1.0.0",
-  "lastDeployed": "2025-11-06T03:10:55.128Z",
+  "lastDeployed": "2025-11-06T06:32:49.356Z",
   "amm": {
     "factory": "0xbED00453471e9C30E23C09636A90F71F9B09BbB8",
     "router": "0xb473d688B45ac4655c136c90c7d8934FBCb45D49",
@@ -9,8 +9,8 @@
   },
   "main": {
     "shariaCompliance": "0xA8e77D21C8145730Aadfc5cc1bfedF94F1ba2099",
-    "shariaSwap": "0x510099c1C9651D1413bC36c87b83fe8e17fe99A7",
-    "shariaDCA": "0x0102A82d11BA01811D851a5e8A2E94F561Cb8329"
+    "shariaSwap": "0xB6668252D57e471EC407094b4c813F4A77D73af2",
+    "shariaDCA": "0x488b83a1728302A8a522526dDc6a6ae34ac8689a"
   },
   "tokens": {
     "BTC": "0x9C8262260A1Cfcca24a36a2d894c2b836Cb1b4E1",
@@ -48,7 +48,7 @@
     "USDC_USDT": "0x54cb4c5a73D63B3740802B763888c68db09D7567"
   },
   "metadata": {
-    "deploymentDate": "2025-11-06T03:10:55.128Z",
+    "deploymentDate": "2025-11-06T06:32:49.356Z",
     "deployer": "0x562d905855488F54DbeD7989da1Ed0f1a4FDF704"
   }
 }

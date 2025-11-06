@@ -229,7 +229,7 @@ contract SimplePair is ERC20, ReentrancyGuard {
     /**
      * @notice Update reserves
      */
-    function _update(uint256 balance0, uint256 balance1, uint112 _reserve0, uint112 _reserve1) private {
+    function _update(uint256 balance0, uint256 balance1, uint112, uint112) private {
         require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "OVERFLOW");
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         reserve0 = uint112(balance0);

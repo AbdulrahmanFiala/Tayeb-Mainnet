@@ -96,6 +96,7 @@ async function main() {
       return await ShariaDCA.deploy(
         shariaComplianceAddress,
         DEX_ROUTER,
+        FACTORY_ADDRESS,
         WETH_ADDRESS
       );
     }
@@ -218,7 +219,7 @@ async function main() {
   console.log("Get API key from: https://moonscan.io/myapikey");
   console.log(`npx hardhat verify --network moonbase ${shariaComplianceAddress}`);
   console.log(`npx hardhat verify --network moonbase ${shariaSwapAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS} ${FACTORY_ADDRESS}`);
-  console.log(`npx hardhat verify --network moonbase ${shariaDCAAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS}`);
+  console.log(`npx hardhat verify --network moonbase ${shariaDCAAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${FACTORY_ADDRESS} ${WETH_ADDRESS}`);
 }
 
 main()

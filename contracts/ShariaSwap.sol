@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ShariaCompliance.sol";
 import "./interfaces/IDEXRouter.sol";
 import "./testnet/SimpleFactory.sol";
+import "./libraries/SwapPathBuilder.sol";
 
 /**
  * @title ShariaSwap
@@ -325,30 +326,8 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
         // Get USDC address from ShariaCompliance
         address usdc = shariaCompliance.getTokenAddress("USDC");
         
-        // If either token is USDC, use direct path
-        if (tokenIn == usdc || tokenOut == usdc) {
-            path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = tokenOut;
-            return path;
-        }
-        
-        // Check if direct pair exists
-        address directPair = factory.getPair(tokenIn, tokenOut);
-        if (directPair != address(0)) {
-            // Direct pair exists, use it
-            path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = tokenOut;
-            return path;
-        }
-        
-        // No direct pair, route through USDC
-        path = new address[](3);
-        path[0] = tokenIn;
-        path[1] = usdc;
-        path[2] = tokenOut;
-        return path;
+        // Use library to build path
+        return SwapPathBuilder.buildSwapPath(address(factory), tokenIn, tokenOut, usdc);
     }
 
     /**

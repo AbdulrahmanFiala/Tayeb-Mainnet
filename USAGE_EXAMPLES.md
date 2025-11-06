@@ -259,7 +259,7 @@ history.forEach((swap, index) => {
 
 ## Creating DCA Orders
 
-### Basic DCA Order
+### Basic DCA Order (DEV → Token)
 
 ```typescript
 // DCA: Invest 1 DEV into USDT every day for 30 days
@@ -271,6 +271,7 @@ const shariaDCA = new ethers.Contract(
   signer
 );
 
+const sourceSymbol = "DEV"; // or "" for native DEV
 const targetSymbol = "USDT";
 const amountPerInterval = ethers.parseEther("1"); // 1 DEV per interval
 const intervalSeconds = 86400; // 1 day (24 hours)
@@ -278,6 +279,7 @@ const totalIntervals = 30; // 30 days total
 const totalDeposit = amountPerInterval * BigInt(totalIntervals); // 30 DEV total
 
 const tx = await shariaDCA.createDCAOrder(
+  sourceSymbol,
   targetSymbol,
   amountPerInterval,
   intervalSeconds,
@@ -290,7 +292,7 @@ console.log("DCA order created!");
 
 // Get order ID from event
 const event = receipt.logs.find(log => 
-  log.topics[0] === ethers.id("DCAOrderCreated(uint256,address,string,uint256,uint256,uint256)")
+  log.topics[0] === ethers.id("DCAOrderCreated(uint256,address,string,string,uint256,uint256,uint256)")
 );
 const orderId = ethers.AbiCoder.defaultAbiCoder().decode(["uint256"], event.topics[1])[0];
 console.log(`Order ID: ${orderId}`);
@@ -300,6 +302,7 @@ console.log(`Order ID: ${orderId}`);
 
 ```typescript
 // Weekly DCA: Invest 5 DEV into BTC every week for 12 weeks
+const sourceSymbol = "DEV";
 const targetSymbol = "BTC";
 const amountPerInterval = ethers.parseEther("5"); // 5 DEV per week
 const intervalSeconds = 604800; // 1 week (7 days)
@@ -307,11 +310,75 @@ const totalIntervals = 12; // 12 weeks
 const totalDeposit = amountPerInterval * BigInt(totalIntervals); // 60 DEV total
 
 const tx = await shariaDCA.createDCAOrder(
+  sourceSymbol,
   targetSymbol,
   amountPerInterval,
   intervalSeconds,
   totalIntervals,
   { value: totalDeposit }
+);
+```
+
+### Token → Token DCA (NEW!)
+
+```typescript
+// DCA: Invest 100 USDC into BTC every day for 30 days
+import halaCoins from './config/halaCoins.json';
+
+const usdcCoin = halaCoins.coins.find(c => c.symbol === "USDC");
+const USDC_ADDRESS = usdcCoin?.addresses.moonbase;
+
+// First, approve ShariaDCA to spend your USDC
+const usdcToken = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+const amountPerInterval = ethers.parseUnits("100", 6); // 100 USDC (6 decimals)
+const totalIntervals = 30;
+const totalRequired = amountPerInterval * BigInt(totalIntervals); // 3000 USDC
+
+await usdcToken.approve(deployedContracts.main.shariaDCA, totalRequired);
+
+// Create DCA order (no ETH value needed for ERC20)
+const tx = await shariaDCA.createDCAOrder(
+  "USDC",           // Source token
+  "BTC",            // Target token
+  amountPerInterval,
+  86400,            // Daily
+  totalIntervals
+);
+
+const receipt = await tx.wait();
+console.log("USDC → BTC DCA order created!");
+```
+
+### More Token → Token Examples
+
+```typescript
+// Example 1: ETH → USDT DCA
+const sourceSymbol = "ETH";
+const targetSymbol = "USDT";
+const amountPerInterval = ethers.parseEther("0.1"); // 0.1 ETH
+const intervalSeconds = 86400; // Daily
+const totalIntervals = 30;
+
+// Approve ETH token first
+const ethToken = new ethers.Contract(ETH_ADDRESS, ERC20_ABI, signer);
+await ethToken.approve(shariaDCA.target, amountPerInterval * BigInt(totalIntervals));
+
+const tx = await shariaDCA.createDCAOrder(
+  sourceSymbol,
+  targetSymbol,
+  amountPerInterval,
+  intervalSeconds,
+  totalIntervals
+);
+
+// Example 2: BTC → SOL DCA
+// Automatically routes through USDC if no direct pair exists
+const tx2 = await shariaDCA.createDCAOrder(
+  "BTC",    // Source
+  "SOL",    // Target (will route BTC → USDC → SOL if needed)
+  ethers.parseUnits("0.01", 8), // 0.01 BTC
+  604800,   // Weekly
+  12        // 12 weeks
 );
 ```
 
@@ -501,6 +568,18 @@ async function swapTokens(tokenIn: string, tokenOut: string, amountIn: bigint) {
     throw error;
   }
 }
+```
+
+## Debugging Failed Transactions
+
+### Decode Failed Transaction Script
+
+If a transaction fails, use the decode script to understand what went wrong:
+
+```bash
+# Using environment variable
+TX_HASH=0x773aac5810a73346407eccc695b23aa9197653b4d306effe58f2714683509a23 \
+npx hardhat run scripts/decode-failed-tx.ts --network moonbase
 ```
 
 ## Frontend Integration (React Example)
