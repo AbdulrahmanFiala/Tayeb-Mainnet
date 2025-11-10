@@ -3,7 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import halaCoinsConfig from "../../config/halaCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
-import { HalaCoinsConfig, DeployedContracts, HalaCoin } from "../../config/types";
+import {
+  HalaCoinsConfig,
+  DeployedContracts,
+  HalaCoin,
+  HalaCoinVariant,
+} from "../../config/types";
 
 const { ethers } = hre;
 
@@ -24,6 +29,20 @@ const { ethers } = hre;
  */
 async function main() {
   const config = halaCoinsConfig as HalaCoinsConfig;
+  const clonedCoins: HalaCoin[] = config.coins.map((coin) => ({
+    ...coin,
+    addresses: {
+      ...coin.addresses,
+    },
+    variants: coin.variants
+      ? coin.variants.map((variant) => ({
+          ...variant,
+          addresses: {
+            ...variant.addresses,
+          },
+        }))
+      : undefined,
+  }));
   const contractsConfig = deployedContractsConfig as DeployedContracts;
 
   console.log("🔄 Syncing coins from contract to JSON config...\n");
@@ -54,38 +73,58 @@ async function main() {
     contractCoinsMap.set(coin.id, coin);
   }
 
-  // Create map of JSON coins by symbol
-  const jsonCoinsMap = new Map<string, HalaCoin>();
-  for (const coin of config.coins) {
-    jsonCoinsMap.set(coin.symbol, coin);
-  }
+  // Create map from symbol to coin/variant reference
+  const symbolIndexMap = new Map<
+    string,
+    { coinIndex: number; variantIndex?: number }
+  >();
+  clonedCoins.forEach((coin, coinIndex) => {
+    symbolIndexMap.set(coin.symbol, { coinIndex });
+    coin.variants?.forEach((variant, variantIndex) => {
+      symbolIndexMap.set(variant.symbol, { coinIndex, variantIndex });
+    });
+  });
 
-  // Update existing coins and track what's in contract
+  // Update existing entries and track contract symbols
   const contractSymbols = new Set<string>();
-  const updatedCoins: HalaCoin[] = [];
 
-  console.log("📝 Processing coins from JSON...");
-  
-  for (const jsonCoin of config.coins) {
-    const contractCoin = contractCoinsMap.get(jsonCoin.symbol);
-    
+  console.log("📝 Processing coins and variants from JSON...");
+
+  for (const [symbol, ref] of symbolIndexMap.entries()) {
+    const contractCoin = contractCoinsMap.get(symbol);
+    const coin = clonedCoins[ref.coinIndex];
+    const variant =
+      ref.variantIndex !== undefined && coin.variants
+        ? coin.variants[ref.variantIndex]
+        : undefined;
+    const label =
+      ref.variantIndex !== undefined && coin.variants
+        ? `${symbol} (variant of ${coin.symbol})`
+        : symbol;
+
     if (contractCoin) {
-      // Coin exists in contract - update from contract
-      contractSymbols.add(jsonCoin.symbol);
-      updatedCoins.push({
-        ...jsonCoin,
-        permissible: contractCoin.verified,
-        complianceReason: contractCoin.complianceReason,
-        // Preserve addresses and other metadata
-      });
-      console.log(`✅ Updated ${jsonCoin.symbol} - permissible: ${contractCoin.verified}`);
+      contractSymbols.add(symbol);
+
+      if (variant) {
+        variant.permissible = contractCoin.verified;
+        variant.complianceReason =
+          contractCoin.complianceReason ?? variant.complianceReason;
+      } else {
+        coin.permissible = contractCoin.verified;
+        coin.complianceReason =
+          contractCoin.complianceReason ?? coin.complianceReason;
+      }
+
+      console.log(
+        `✅ Updated ${label} - permissible: ${contractCoin.verified}`
+      );
     } else {
-      // Coin not in contract - mark as not permissible but keep in JSON
-      updatedCoins.push({
-        ...jsonCoin,
-        permissible: false,
-      });
-      console.log(`⚠️  ${jsonCoin.symbol} not in contract - set permissible: false`);
+      if (variant) {
+        variant.permissible = false;
+      } else {
+        coin.permissible = false;
+      }
+      console.log(`⚠️  ${label} not in contract - set permissible: false`);
     }
   }
 
@@ -96,7 +135,7 @@ async function main() {
   let newCoinsCount = 0;
   
   for (const contractCoin of contractCoins) {
-    if (!jsonCoinsMap.has(contractCoin.id)) {
+    if (!symbolIndexMap.has(contractCoin.id)) {
       // New coin from contract - add to JSON
       const newCoin: HalaCoin = {
         symbol: contractCoin.id,
@@ -109,7 +148,10 @@ async function main() {
           moonbeam: null,
         },
       };
-      updatedCoins.push(newCoin);
+      clonedCoins.push(newCoin);
+      symbolIndexMap.set(contractCoin.id, {
+        coinIndex: clonedCoins.length - 1,
+      });
       newCoinsCount++;
       console.log(`➕ Added new coin: ${contractCoin.id} (${contractCoin.name})`);
     }
@@ -123,7 +165,7 @@ async function main() {
   // Update JSON
   const updatedConfig: HalaCoinsConfig = {
     ...config,
-    coins: updatedCoins,
+    coins: clonedCoins,
     metadata: {
       ...config.metadata,
       lastUpdated: new Date().toISOString(),
@@ -136,11 +178,21 @@ async function main() {
   console.log("=".repeat(60));
   console.log("📋 SYNC SUMMARY");
   console.log("=".repeat(60));
-  console.log(`Total coins in JSON: ${updatedCoins.length}`);
+  const variantCount = clonedCoins.reduce(
+    (acc, coin) => acc + (coin.variants?.length ?? 0),
+    0
+  );
+  console.log(`Total coins in JSON: ${clonedCoins.length}`);
+  console.log(`Total variants in JSON: ${variantCount}`);
   console.log(`Coins in contract: ${contractCoins.length}`);
   console.log(`New coins added: ${newCoinsCount}`);
-  console.log(`Permissible coins: ${updatedCoins.filter(c => c.permissible).length}`);
-  console.log(`Non-permissible coins: ${updatedCoins.filter(c => !c.permissible).length}`);
+  const permissibleCoins = clonedCoins.filter((c) => c.permissible).length;
+  const permissibleVariants = clonedCoins.reduce(
+    (acc, coin) => acc + (coin.variants?.filter((v) => v.permissible).length ?? 0),
+    0
+  );
+  console.log(`Permissible base coins: ${permissibleCoins}`);
+  console.log(`Permissible variants: ${permissibleVariants}`);
   console.log("=".repeat(60));
   console.log();
   console.log("✅ JSON config updated successfully!");

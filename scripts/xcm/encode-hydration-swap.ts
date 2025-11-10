@@ -9,7 +9,7 @@ import * as path from 'path';
  */
 
 interface XcmConfig {
-  hydrationTestnet: {
+  hydration: {
     rpcUrl: string;
     omnipoolPalletName: string;
     assetRegistry: Record<string, number>;
@@ -105,7 +105,7 @@ export async function encodeOmnipoolBuy(
  * Get asset ID from symbol
  */
 function getAssetId(config: XcmConfig, symbol: string): number {
-  const assetId = config.hydrationTestnet.assetRegistry[symbol];
+  const assetId = config.hydration.assetRegistry[symbol];
   if (assetId === undefined) {
     throw new Error(`Asset ${symbol} not found in registry`);
   }
@@ -121,7 +121,7 @@ async function main() {
     const config = loadXcmConfig();
     
     // Connect to Hydration
-    const api = await connectToHydration(config.hydrationTestnet.rpcUrl);
+    const api = await connectToHydration(config.hydration.rpcUrl);
     
     // Example: Encode a swap from USDT to HDX
     console.log('\n🔄 Example: Swap 100 USDT for HDX');
@@ -157,7 +157,7 @@ async function main() {
     );
     
     console.log('\n✅ Encoding complete!');
-    console.log('\nℹ️  Use these encoded calls in RemoteSwapInitiator contract');
+    console.log('\nℹ️  Use these encoded calls in CrosschainSwapInitiator contract');
     
     // Disconnect
     await api.disconnect();

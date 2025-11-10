@@ -2,6 +2,19 @@
  * Type definitions for Hala Coins configuration
  */
 
+export interface HalaCoinVariant {
+  symbol: string;
+  name?: string;
+  decimals?: number;
+  complianceReason?: string;
+  description?: string;
+  permissible?: boolean;
+  addresses: {
+    moonbeam: string | null;
+  };
+  assetId?: number | null;
+}
+
 export interface HalaCoin {
   symbol: string;
   name: string;
@@ -12,6 +25,8 @@ export interface HalaCoin {
   addresses: {
     moonbeam: string | null;
   };
+  assetId?: number | null;
+  variants?: HalaCoinVariant[];
 }
 
 export interface HalaCoinsConfig {
@@ -64,9 +79,9 @@ export interface DeployedAMM {
 
 export interface DeployedMain {
   shariaCompliance: string | null;
-  shariaSwap: string | null;
+  shariaLocalSwap: string | null;
   shariaDCA: string | null;
-  remoteSwapInitiator?: string | null;
+  crosschainSwapInitiator?: string | null;
 }
 
 export interface DeploymentMetadata {

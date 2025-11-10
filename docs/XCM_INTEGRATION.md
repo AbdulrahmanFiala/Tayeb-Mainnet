@@ -14,7 +14,7 @@ This guide explains how to use Tayeb's cross-chain swap functionality to execute
 │  │    ↓                                                     │   │
 │  │  ShariaCompliance (validates target token)               │   │
 │  │    ↓                                                     │   │
-│  │  RemoteSwapInitiator (locks source tokens, builds XCM)   │   │
+│  │  CrosschainSwapInitiator (locks source tokens, builds XCM)   │   │
 │  │    ↓                                                     │   │
 │  │  XCM Transactor Precompile (0x0806)                      │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -126,9 +126,9 @@ npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 
 This deploys:
 - ShariaCompliance (token registry)
-- RemoteSwapInitiator (XCM bridge entrypoint)
+- CrosschainSwapInitiator (XCM bridge entrypoint)
 
-To deploy the full Tayeb stack (adds ShariaSwap + ShariaDCA), run:
+To deploy the full Tayeb stack (adds ShariaLocalSwap + ShariaDCA), run:
 
 ```bash
 npm run deploy:moonbeam
@@ -145,11 +145,11 @@ Both scripts write addresses and metadata to `config/deployedContracts.json`.
 
 ### 3. Fund the Contract
 
-The RemoteSwapInitiator needs native DEV for XCM fees:
+The CrosschainSwapInitiator needs native DEV for XCM fees:
 
 ```bash
 # Send 1 DEV to the contract
-cast send <RemoteSwapInitiator_Address> --value 1ether --private-key $PRIVATE_KEY --rpc-url $MOONBEAM_RPC_URL
+cast send <CrosschainSwapInitiator_Address> --value 1ether --private-key $PRIVATE_KEY --rpc-url $MOONBEAM_RPC_URL
 ```
 
 Or use MetaMask to send DEV directly to the contract address.
@@ -183,7 +183,7 @@ async function executeRemoteSwap() {
   
   // Get contract instance
   const remoteSwapInitiator = await ethers.getContractAt(
-    "RemoteSwapInitiator",
+    "CrosschainSwapInitiator",
     "0x..." // Address from deployedContracts.json
   );
   
@@ -293,7 +293,7 @@ This script:
 
 ## XCM Message Structure
 
-The RemoteSwapInitiator constructs XCM messages with the following structure:
+The CrosschainSwapInitiator constructs XCM messages with the following structure:
 
 ```
 XCM Message [
@@ -511,7 +511,7 @@ await remoteSwapInitiator.emergencyWithdraw(
 Test XCM encoding without actual cross-chain calls:
 
 ```bash
-npx hardhat test test/RemoteSwapInitiator.test.ts
+npx hardhat test test/CrosschainSwapInitiator.test.ts
 ```
 
 ### Fork / Test Testing
@@ -532,7 +532,7 @@ Full end-to-end test:
 npm run deploy:mainnet
 
 # 2. Fund contracts
-# Send GLMR to RemoteSwapInitiator
+# Send GLMR to CrosschainSwapInitiator
 
 # 3. Execute test swap
 npx hardhat run scripts/xcm/initiate-remote-swap.ts --network moonbeam
@@ -570,7 +570,7 @@ Before reporting issues, verify:
 - [ ] HRMP channels exist and are open
 - [ ] Assets are registered as XC-20s on both chains
 - [ ] Sovereign account has sufficient HDX balance
-- [ ] RemoteSwapInitiator has DEV for fees
+- [ ] CrosschainSwapInitiator has DEV for fees
 - [ ] User has approved tokens
 - [ ] Target token is Sharia compliant
 - [ ] Omnipool has liquidity for the pair

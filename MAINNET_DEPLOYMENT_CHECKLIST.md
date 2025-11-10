@@ -20,7 +20,7 @@ Estimated need: **2-3 GLMR** (~$0.40-$0.60)
 
 ### 3. Code Review
 - [ ] Review `contracts/ShariaCompliance.sol` - no changes needed
-- [ ] Review `contracts/xcm/RemoteSwapInitiator.sol` - verify constructor params
+- [ ] Review `contracts/CrosschainSwapInitiator.sol` - verify constructor params
 - [ ] Review `contracts/xcm/IXcmTransactor.sol` - interface only, no changes
 - [ ] Run linter: `npx hardhat compile`
 - [ ] Check for compiler warnings
@@ -46,7 +46,7 @@ MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
 # 2. Compile contracts
 npx hardhat compile
 
-# 3. Deploy core contracts (ShariaCompliance + RemoteSwapInitiator)
+# 3. Deploy core contracts (ShariaCompliance + CrosschainSwapInitiator)
 npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 ```
 
@@ -63,18 +63,18 @@ Balance: X.XX GLMR
 **Checklist**:
 - [ ] Deployment successful
 - [ ] Copy `ShariaCompliance` address: `0x_______________`
-- [ ] Copy `RemoteSwapInitiator` address: `0x_______________`
+- [ ] Copy `CrosschainSwapInitiator` address: `0x_______________`
 - [ ] Save deployment block number(s): `_______`
 - [ ] Verify on Moonscan: `https://moonscan.io/address/0xABC123...`
 - [ ] Update `.env`: `SHARIA_COMPLIANCE_ADDRESS=0xABC123...`
 
-### Phase 2: Deploy ShariaSwap & ShariaDCA (optional)
+### Phase 2: Deploy ShariaLocalSwap & ShariaDCA (optional)
 
 > Easiest path: rerun the full deployer (idempotent)  
 > `npm run deploy:mainnet`
 
 ```bash
-# Deploy ShariaSwap + ShariaDCA only (idempotent)
+# Deploy ShariaLocalSwap + ShariaDCA only (idempotent)
 npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 ```
 
@@ -89,7 +89,7 @@ npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 # Verify ShariaCompliance
 npx hardhat verify --network moonbeam 0xABC123...
 
-# Verify RemoteSwapInitiator (already deployed via deploy-core)
+# Verify CrosschainSwapInitiator (already deployed via deploy-core)
 npx hardhat verify --network moonbeam 0xDEF456... \
   "0x0000000000000000000000000000000000000806" \
   "0xABC123..."
@@ -103,8 +103,8 @@ npx hardhat verify --network moonbeam 0x_____________ \
 
 **Checklist**:
 - [ ] ShariaCompliance verified on Moonscan
-- [ ] ShariaSwap verified on Moonscan (if deployed)
-- [ ] RemoteSwapInitiator verified on Moonscan
+- [ ] ShariaLocalSwap verified on Moonscan (if deployed)
+- [ ] CrosschainSwapInitiator verified on Moonscan
 - [ ] ShariaDCA verified on Moonscan (if deployed)
 - [ ] Source code visible on explorer
 - [ ] Contract ABI available
@@ -119,7 +119,7 @@ npx hardhat verify --network moonbeam 0x_____________ \
 ```json
 {
   "ShariaCompliance": "0xABC123...",
-  "RemoteSwapInitiator": "0xDEF456...",
+  "CrosschainSwapInitiator": "0xDEF456...",
   "ShariaDCA": "0x_____________",
   "deploymentBlock": 5750500,
   "network": "moonbeam-mainnet",
@@ -145,13 +145,13 @@ async function main() {
   const btcCompliant = await sharia.isShariaCompliant("BTC");
   console.log(`✅ ShariaCompliance.isShariaCompliant("BTC"): ${btcCompliant}`);
 
-  // Test RemoteSwapInitiator
-  const initiator = await ethers.getContractAt("RemoteSwapInitiator", initiatorAddress!);
+  // Test CrosschainSwapInitiator
+  const initiator = await ethers.getContractAt("CrosschainSwapInitiator", initiatorAddress!);
   const shariaRef = await initiator.shariaCompliance();
   const hydrationId = await initiator.hydrationParachainId();
   
-  console.log(`✅ RemoteSwapInitiator.shariaCompliance(): ${shariaRef}`);
-  console.log(`✅ RemoteSwapInitiator.hydrationParachainId(): ${hydrationId}`);
+  console.log(`✅ CrosschainSwapInitiator.shariaCompliance(): ${shariaRef}`);
+  console.log(`✅ CrosschainSwapInitiator.hydrationParachainId(): ${hydrationId}`);
   
   console.log("\n🎉 All contract reads successful!");
 }
@@ -165,7 +165,7 @@ npx hardhat run scripts/test-mainnet-deployment.ts --network moonbeam
 
 **Checklist**:
 - [ ] ShariaCompliance reads work
-- [ ] RemoteSwapInitiator reads work
+- [ ] CrosschainSwapInitiator reads work
 - [ ] All addresses match expected values
 
 ### 3. Initialize Sharia Compliance Data
@@ -232,7 +232,7 @@ If deployment fails or issues found:
 | Item | Estimated Cost (GLMR) | USD Equivalent |
 |------|----------------------|----------------|
 | ShariaCompliance deployment | 0.5 | $0.10 |
-| RemoteSwapInitiator deployment | 1.0 | $0.20 |
+| CrosschainSwapInitiator deployment | 1.0 | $0.20 |
 | Contract verification | 0.0 | $0.00 |
 | Sharia data initialization | 0.2 | $0.04 |
 | Test transactions | 0.3 | $0.06 |

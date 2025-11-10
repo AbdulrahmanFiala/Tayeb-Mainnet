@@ -9,7 +9,7 @@ import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
  *
  * This script verifies:
  * 1. All configured ERC20 tokens (optional mocks)
- * 2. Core Tayeb contracts (ShariaCompliance, ShariaSwap, ShariaDCA)
+ * 2. Core Tayeb contracts (ShariaCompliance, ShariaLocalSwap, ShariaDCA)
  *
  * Requires ETHERSCAN_API_KEY to be set in .env file.
  * Checks verification status before attempting to avoid unnecessary API calls.
@@ -159,13 +159,13 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  // ShariaSwap (shariaCompliance, router, weth)
-  const shariaSwapAddress = contractsConfig.main?.shariaSwap;
+  // ShariaLocalSwap (shariaCompliance, router, weth)
+  const shariaLocalSwapAddress = contractsConfig.main?.shariaLocalSwap;
   const routerAddress = contractsConfig.amm?.router;
   const wethAddress = contractsConfig.amm?.weth;
-  if (shariaSwapAddress && shariaComplianceAddress && routerAddress && wethAddress) {
+  if (shariaLocalSwapAddress && shariaComplianceAddress && routerAddress && wethAddress) {
     const swapArgs = [shariaComplianceAddress, routerAddress, wethAddress];
-    const result = await verifyContract("main", "ShariaSwap", shariaSwapAddress, swapArgs, "ShariaSwap");
+    const result = await verifyContract("main", "ShariaLocalSwap", shariaLocalSwapAddress, swapArgs, "ShariaLocalSwap");
     if (result === "verified") results.main.verified++;
     else results.main.failed++;
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -181,8 +181,8 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  // RemoteSwapInitiator (shariaCompliance, xcmTransactor, parachainId, palletIndex, callIndex)
-  const remoteSwapAddress = contractsConfig.main?.remoteSwapInitiator;
+  // CrosschainSwapInitiator (shariaCompliance, xcmTransactor, parachainId, palletIndex, callIndex)
+  const crosschainSwapAddress = contractsConfig.main?.crosschainSwapInitiator;
   const remoteArgs = [
     shariaComplianceAddress,
     xcmConfig?.moonbeam?.xcmTransactorPrecompile,
@@ -191,18 +191,18 @@ async function main() {
     xcmConfig?.hydration?.sellCallIndex,
   ];
   if (
-    remoteSwapAddress &&
+    crosschainSwapAddress &&
     remoteArgs.every((arg) => arg !== undefined && arg !== null) &&
     typeof remoteArgs[2] === "number" &&
     typeof remoteArgs[3] === "number" &&
     typeof remoteArgs[4] === "number"
   ) {
-    const result = await verifyContract("main", "RemoteSwapInitiator", remoteSwapAddress, remoteArgs, "RemoteSwapInitiator");
+    const result = await verifyContract("main", "CrosschainSwapInitiator", crosschainSwapAddress, remoteArgs, "CrosschainSwapInitiator");
     if (result === "verified") results.main.verified++;
     else results.main.failed++;
     await new Promise((resolve) => setTimeout(resolve, 2000));
   } else {
-    console.log("⏭️  RemoteSwapInitiator - Missing configuration values, skipping");
+    console.log("⏭️  CrosschainSwapInitiator - Missing configuration values, skipping");
   }
 
   // ============================================================================

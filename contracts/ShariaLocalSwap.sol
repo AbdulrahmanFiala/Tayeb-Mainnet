@@ -9,11 +9,11 @@ import "./ShariaCompliance.sol";
 import "./interfaces/IDEXRouter.sol";
 
 /**
- * @title ShariaSwap
- * @notice Sharia-compliant token swapping using external DEX routing
- * @dev Users provide explicit swap paths (via a Uniswap V2-compatible router)
+ * @title ShariaLocalSwap
+ * @notice Sharia-compliant token swapping using the StellaSwap (Uniswap V2-compatible) router
+ * @dev Users provide explicit swap paths (via the configured Uniswap V2-compatible router)
  */
-contract ShariaSwap is Ownable, ReentrancyGuard {
+contract ShariaLocalSwap is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============================================================================
@@ -85,10 +85,10 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
     // ============================================================================
 
     /**
-     * @notice Initialize the ShariaSwap contract
+     * @notice Initialize the ShariaLocalSwap contract
      * @param _shariaCompliance Address of ShariaCompliance contract
-     * @param _dexRouter Address of Uniswap V2 compatible router
-     * @param _weth Address of WETH token (Wrapped DEV)
+     * @param _dexRouter Address of StellaSwap (Uniswap V2-compatible) router
+     * @param _weth Address of WETH token (Wrapped GLMR)
      */
     constructor(
         address _shariaCompliance,

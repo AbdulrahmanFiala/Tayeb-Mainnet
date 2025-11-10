@@ -6,8 +6,9 @@ This directory contains centralized configuration files for the Tayeb platform.
 
 ### `halaCoins.json`
 Single source of truth for all Initial Hala Coins configuration. This file:
-- Defines all 16 Initial Hala Coins with metadata
-- Stores deployed token contract addresses (updated by `deploy-tokens.ts`)
+- Defines the canonical list of compliant assets with metadata
+- Supports per-asset `variants` so bridged/flavoured tokens can inherit metadata from their parent while providing unique symbols and addresses
+- Stores deployed token contract addresses (updated by deployment or sync scripts)
 - Can be imported by both backend scripts and frontend
 
 ### `deployedContracts.json`
@@ -26,13 +27,13 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 ## How Scripts Update Config Files
 
 ### `deploy/deploy-core.ts`
-- Deploys ShariaCompliance and RemoteSwapInitiator
-- Registers coins from `halaCoins.json` to ShariaCompliance contract
+- Deploys ShariaCompliance and CrosschainSwapInitiator
+- Registers both base coins and any declared variants from `halaCoins.json` to the ShariaCompliance contract
 - Updates `deployedContracts.json`: Adds addresses to `main` section
 - Leaves `amm.router` / `amm.weth` untouched (expects them to be pre-filled)
 
 ### `deploy/deploy-all.ts`
-- Runs `deploy/deploy-core.ts`, then deploys ShariaSwap and ShariaDCA inline
+- Runs `deploy/deploy-core.ts`, then deploys ShariaLocalSwap and ShariaDCA inline
 - Useful for mainnet or orchestrated deployments (deploys/updates everything in one go)
 
 ### `automation/sync-coins-from-contract.ts`

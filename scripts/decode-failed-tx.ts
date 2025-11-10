@@ -157,7 +157,7 @@ async function decodeFunctionCall(tx: any, receipt: any) {
         try {
           const parsed = iface.parseTransaction({ data: tx.data, value: tx.value });
           decoded = parsed;
-          // Extract contract name from path (e.g., "ShariaSwap.sol/ShariaSwap.json" -> "ShariaSwap")
+          // Extract contract name from path (e.g., "ShariaLocalSwap.sol/ShariaLocalSwap.json" -> "ShariaLocalSwap")
           const pathParts = contractFile.split(path.sep);
           const solFile = pathParts[pathParts.length - 2];
           contractName = solFile.replace(".sol", "");

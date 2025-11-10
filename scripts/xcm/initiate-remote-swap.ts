@@ -2,6 +2,7 @@ import hre from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
+import { DeployedContracts } from "../../config/types";
 
 const { ethers } = hre;
 
@@ -10,14 +11,8 @@ const { ethers } = hre;
  * Monitors XCM message status and provides troubleshooting guidance.
  */
 
-interface DeployedContracts {
-  RemoteSwapInitiator?: string;
-  ShariaCompliance?: string;
-  [key: string]: string | undefined;
-}
-
 interface XcmConfig {
-  hydrationTestnet: {
+  hydration: {
     assetRegistry: Record<string, number>;
   };
 }
@@ -28,7 +23,7 @@ interface XcmConfig {
 function loadDeployedContracts(): DeployedContracts {
   const configPath = path.join(__dirname, "../../config/deployedContracts.json");
   if (!fs.existsSync(configPath)) {
-    throw new Error("No deployed contracts found. Deploy RemoteSwapInitiator first.");
+    throw new Error("No deployed contracts found. Deploy CrosschainSwapInitiator first.");
   }
   const configData = fs.readFileSync(configPath, "utf-8");
   return JSON.parse(configData);
@@ -69,7 +64,7 @@ function prompt(rl: readline.Interface, question: string): Promise<string> {
  */
 function displayAvailableAssets(xcmConfig: XcmConfig) {
   console.log("\n📋 Available Assets on Hydration:");
-  const assets = xcmConfig.hydrationTestnet.assetRegistry;
+  const assets = xcmConfig.hydration.assetRegistry;
   Object.entries(assets).forEach(([symbol, id]) => {
     console.log(`   ${symbol.padEnd(8)} (ID: ${id})`);
   });
@@ -80,7 +75,7 @@ function displayAvailableAssets(xcmConfig: XcmConfig) {
  * Monitor swap status
  */
 async function monitorSwapStatus(
-  remoteSwapInitiator: any,
+  crosschainSwapInitiator: any,
   swapId: string,
   maxAttempts: number = 60
 ) {
@@ -88,7 +83,7 @@ async function monitorSwapStatus(
   console.log(`   Swap ID: ${swapId}`);
   
   for (let i = 0; i < maxAttempts; i++) {
-    const swap = await remoteSwapInitiator.getSwap(swapId);
+    const swap = await crosschainSwapInitiator.getSwap(swapId);
     const status = Number(swap.status);
     
     const statusNames = ["Pending", "Initiated", "Completed", "Failed", "Cancelled"];
@@ -118,7 +113,7 @@ async function monitorSwapStatus(
   }
   
   console.log("\n⏱️  Monitoring timeout. Check status manually:");
-  console.log(`   await remoteSwapInitiator.getSwap("${swapId}")`);
+  console.log(`   await crosschainSwapInitiator.getSwap("${swapId}")`);
   return false;
 }
 
@@ -146,14 +141,14 @@ function displayTroubleshootingTips() {
 }
 
 async function main() {
-  console.log("\n🌉 Remote Swap Initiator - Moonbeam → Hydration\n");
+  console.log("\n🌉 Crosschain Swap Initiator - Moonbeam → Hydration\n");
 
   // Load configurations
   const deployedContracts = loadDeployedContracts();
   const xcmConfig = loadXcmConfig();
 
-  if (!deployedContracts.RemoteSwapInitiator) {
-    throw new Error("RemoteSwapInitiator not deployed. Run deploy-remote-swap.ts first.");
+  if (!deployedContracts.main?.crosschainSwapInitiator) {
+    throw new Error("CrosschainSwapInitiator not deployed. Run deploy-core.ts first.");
   }
 
   // Get signer
@@ -164,17 +159,17 @@ async function main() {
   console.log(`   Balance: ${ethers.formatEther(balance)} DEV`);
 
   // Get contract instances
-  const remoteSwapInitiator = await ethers.getContractAt(
-    "RemoteSwapInitiator",
-    deployedContracts.RemoteSwapInitiator!
+  const crosschainSwapInitiator = await ethers.getContractAt(
+    "CrosschainSwapInitiator",
+    deployedContracts.main.crosschainSwapInitiator!
   );
 
   const shariaCompliance = await ethers.getContractAt(
     "ShariaCompliance",
-    deployedContracts.ShariaCompliance!
+    deployedContracts.main.shariaCompliance!
   );
 
-  console.log(`\n📍 RemoteSwapInitiator: ${deployedContracts.RemoteSwapInitiator}`);
+  console.log(`\n📍 CrosschainSwapInitiator: ${deployedContracts.main.crosschainSwapInitiator}`);
 
   // Display available assets
   displayAvailableAssets(xcmConfig);
@@ -229,16 +224,13 @@ async function main() {
     // Approve tokens
     console.log("\n📝 Approving tokens...");
     const sourceToken = await ethers.getContractAt("IERC20", sourceTokenAddr);
-    const approveTx = await sourceToken.approve(
-      deployedContracts.RemoteSwapInitiator!,
-      amount
-    );
+    const approveTx = await sourceToken.approve(deployedContracts.main.crosschainSwapInitiator!, amount);
     await approveTx.wait();
     console.log("✅ Tokens approved");
     
     // Initiate swap
     console.log("\n🚀 Initiating remote swap...");
-    const tx = await remoteSwapInitiator.initiateRemoteSwap(
+    const tx = await crosschainSwapInitiator.initiateRemoteSwap(
       sourceTokenAddr,
       targetTokenAddr,
       amount,
@@ -258,7 +250,7 @@ async function main() {
     // Parse events to get swap ID
     const event = receipt.logs.find((log: any) => {
       try {
-        const parsed = remoteSwapInitiator.interface.parseLog(log);
+        const parsed = crosschainSwapInitiator.interface.parseLog(log);
         return parsed?.name === "RemoteSwapInitiated";
       } catch {
         return false;
@@ -266,7 +258,7 @@ async function main() {
     });
     
     if (event) {
-      const parsed = remoteSwapInitiator.interface.parseLog(event);
+      const parsed = crosschainSwapInitiator.interface.parseLog(event);
       const swapId = parsed?.args[0];
       
       console.log(`\n✅ Remote swap initiated!`);
@@ -276,7 +268,7 @@ async function main() {
       // Monitor status
       const monitorChoice = await prompt(rl, "\nMonitor swap status? (yes/no): ");
       if (monitorChoice.toLowerCase() === "yes") {
-        await monitorSwapStatus(remoteSwapInitiator, swapId);
+        await monitorSwapStatus(crosschainSwapInitiator, swapId);
       }
     }
     

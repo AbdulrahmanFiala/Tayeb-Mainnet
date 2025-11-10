@@ -9,7 +9,7 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
 - **Compliance Validation**: All swaps and investments validated against Sharia principles
 - **Transparent Documentation**: Each token includes compliance reasoning
 
-### 2. Token Swapping (ShariaSwap)
+### 2. Token Swapping (ShariaLocalSwap)
 - **Router Integration**: Works with any Uniswap V2-compatible router (e.g. StellaSwap on Moonbeam)
 - **User-Defined Paths**: Callers provide the exact swap path for full control and transparency
 - **Compliance Enforcement**: Only allows swaps into Sharia-compliant assets registered on-chain
@@ -19,7 +19,7 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
 
 ### 3. Dollar Cost Averaging (ShariaDCA)
 - **Automated DCA**: Schedule periodic investments into Sharia-compliant tokens
-- **Router-Agnostic**: Reuses the same user-provided paths as ShariaSwap
+- **Router-Agnostic**: Reuses the same user-provided paths as ShariaLocalSwap
 - **Local Automation**: Automated execution via local script
 - **Flexible Intervals**: Set custom schedules
 - **Prepaid Deposits**: Lock funds for future executions
@@ -42,7 +42,7 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
 └───────────┬────────────────────────────────────┬───────────┘
             │                                    │
 ┌───────────▼──────────┐              ┌──────────▼──────────┐
-│  ShariaCompliance    │              │    ShariaSwap       │
+│  ShariaCompliance    │              │  ShariaLocalSwap    │
 │  - Token Registry    │◄─────────────┤    - Router Proxy   │
 │  - Validation        │              │    - Swap Logic     │
 └──────────────────────┘              └─────────────────────┘
@@ -77,7 +77,7 @@ Core registry managing Sharia-compliant token approvals. **Contract is source of
 
 **Note:** Coins are registered programmatically from `config/halaCoins.json` during deployment. After deployment, use contract functions to add/remove coins, then sync JSON with `npm run sync:coins`.
 
-### ShariaSwap.sol
+### ShariaLocalSwap.sol
 Token swapping with DEX integration and compliance validation.
 
 **Key Functions:**
@@ -106,11 +106,11 @@ Automated Dollar Cost Averaging with local automation script.
 
 **Features:**
 - **Any Token → Any Token DCA**: Deposit DEV, USDC, BTC, or any Sharia-compliant token and DCA into any other token
-- **Explicit Routing**: Uses the same caller-provided path as ShariaSwap, offering predictable execution routes
+- **Explicit Routing**: Uses the same caller-provided path as ShariaLocalSwap, offering predictable execution routes
 - Token addresses are automatically queried from `ShariaCompliance` contract. No separate registration needed.
 - **Local Automation**: Run `scripts/automation/auto-execute-dca.ts` to automatically execute orders
 
-### RemoteSwapInitiator.sol
+### CrosschainSwapInitiator.sol
 Cross-chain swap execution via Polkadot XCM to Hydration parachain.
 
 **Key Functions:**
@@ -151,7 +151,7 @@ cp .env.example .env
 # Compile, test, and deploy
 npm run compile
 npm test
-npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaSwap + RemoteSwapInitiator + ShariaDCA
+npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaLocalSwap + CrosschainSwapInitiator + ShariaDCA
 ```
 
 ### Target Network
@@ -212,7 +212,7 @@ Tayeb supports cross-chain swaps from Moonbeam to Hydration parachain using Polk
 
 ### Quick Start
 
-1. **Deploy RemoteSwapInitiator**:
+1. **Deploy CrosschainSwapInitiator**:
    ```bash
    npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
    ```
@@ -233,7 +233,7 @@ Before using cross-chain swaps, ensure:
 - ✅ HRMP channel exists between Moonbeam and Hydration
 - ✅ Assets are registered as XC-20s on both chains
 - ✅ Moonbeam's sovereign account on Hydration has HDX for fees
-- ✅ RemoteSwapInitiator contract has DEV for XCM fees
+- ✅ CrosschainSwapInitiator contract has DEV for XCM fees
 
 ### Documentation
 

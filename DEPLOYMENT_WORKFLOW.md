@@ -6,10 +6,10 @@
 
 The deployment flow now consists of two tiers:
 
-1. **Core Contracts** – `ShariaCompliance`, `RemoteSwapInitiator`  
+1. **Core Contracts** – `ShariaCompliance`, `CrosschainSwapInitiator`  
    Script: `scripts/deploy/deploy-core.ts`
-2. **Full Stack (Optional)** – adds `ShariaSwap` and `ShariaDCA`  
-   Script: `scripts/deploy/deploy-all.ts` (runs core, then deploys ShariaSwap + ShariaDCA inline)
+2. **Full Stack (Optional)** – adds `ShariaLocalSwap` and `ShariaDCA`  
+   Script: `scripts/deploy/deploy-all.ts` (runs core, then deploys ShariaLocalSwap + ShariaDCA inline)
 
 All addresses are written to `config/deployedContracts.json`. Tokens are registered from `config/halaCoins.json` automatically.
 
@@ -31,7 +31,7 @@ All addresses are written to `config/deployedContracts.json`. Tokens are registe
 npm run deploy:mainnet             # Moonbeam mainnet (⚠️ real GLMR)
 ```
 
-`scripts/deploy/deploy-all.ts` runs the core deployment, then deploys ShariaSwap and ShariaDCA inline.
+`scripts/deploy/deploy-all.ts` runs the core deployment, then deploys ShariaLocalSwap and ShariaDCA inline.
 
 ## Manual Steps
 
@@ -40,17 +40,17 @@ npm run deploy:mainnet             # Moonbeam mainnet (⚠️ real GLMR)
 npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 ```
 Actions performed:
-- Deploys `ShariaCompliance` and `RemoteSwapInitiator`
+- Deploys `ShariaCompliance` and `CrosschainSwapInitiator`
 - Registers all tokens from `config/halaCoins.json`
 - Writes addresses & metadata back to `config/deployedContracts.json`
 
 Re-running the script is safe; it will reuse existing deployments when addresses are already set.
 
-### 2. Deploy ShariaSwap & ShariaDCA (Optional)
+### 2. Deploy ShariaLocalSwap & ShariaDCA (Optional)
 ```bash
 npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 ```
-`deploy-all` re-runs `deploy-core`, then deploys `ShariaSwap` and `ShariaDCA`. It is idempotent; reruns reuse existing deployments.
+`deploy-all` re-runs `deploy-core`, then deploys `ShariaLocalSwap` and `ShariaDCA`. It is idempotent; reruns reuse existing deployments.
 
 ### 3. Update Token Registry (Optional)
 Add new assets to `halaCoins.json` and run:
@@ -68,13 +68,13 @@ npm run verify:all -- --network moonbeam
 
 The verification script covers:
 - Tokens listed in `config/deployedContracts.json`
-- ShariaCompliance / ShariaSwap / ShariaDCA / RemoteSwapInitiator
+- ShariaCompliance / ShariaLocalSwap / ShariaDCA / CrosschainSwapInitiator
 
 Re-running skips already-verified contracts.
 
 ## Post-Deployment Checklist
 
-- [ ] Fund `ShariaSwap` with necessary token approvals (if executing on behalf of a multisig)
+- [ ] Fund `ShariaLocalSwap` with necessary token approvals (if executing on behalf of a multisig)
 - [ ] Create example DCA orders and ensure `path` arrays are valid
 - [ ] Run a low-value swap on mainnet to confirm router + paths
 - [ ] Configure automation scripts (`automation/auto-execute-dca.ts`, `automation/execute-ready-orders.ts`)

@@ -38,8 +38,8 @@ function loadContractsConfig(): DeployedContracts {
   return JSON.parse(raw);
 }
 
-async function deployShariaSwap(network: string) {
-  console.log("💱 Deploying ShariaSwap...");
+async function deployShariaLocalSwap(network: string) {
+  console.log("💱 Deploying ShariaLocalSwap...");
 
   const configPath = path.join(__dirname, "..", "..", "config", "deployedContracts.json");
   const contractsConfig = loadContractsConfig();
@@ -58,12 +58,12 @@ async function deployShariaSwap(network: string) {
     throw new Error("DEX router address missing in config/deployedContracts.json.");
   }
 
-  const shariaSwapAddress = await deployOrVerifyContract(
-    "ShariaSwap",
-    contractsConfig.main.shariaSwap,
+  const shariaLocalSwapAddress = await deployOrVerifyContract(
+    "ShariaLocalSwap",
+    contractsConfig.main.shariaLocalSwap,
     async () => {
-      const ShariaSwap = await ethers.getContractFactory("ShariaSwap");
-      return await ShariaSwap.deploy(
+      const ShariaLocalSwap = await ethers.getContractFactory("ShariaLocalSwap");
+      return await ShariaLocalSwap.deploy(
         contractsConfig.main.shariaCompliance!,
         router,
         weth,
@@ -80,7 +80,7 @@ async function deployShariaSwap(network: string) {
     lastDeployed: new Date().toISOString(),
     main: {
       ...contractsConfig.main,
-      shariaSwap: shariaSwapAddress,
+      shariaLocalSwap: shariaLocalSwapAddress,
     },
     metadata: {
       ...contractsConfig.metadata,
@@ -90,8 +90,8 @@ async function deployShariaSwap(network: string) {
   };
 
   fs.writeFileSync(configPath, JSON.stringify(updatedContracts, null, 2) + "\n");
-  console.log("✅ ShariaSwap deployed at:", shariaSwapAddress);
-  console.log("✅ Updated deployedContracts.json with ShariaSwap address\n");
+  console.log("✅ ShariaLocalSwap deployed at:", shariaLocalSwapAddress);
+  console.log("✅ Updated deployedContracts.json with ShariaLocalSwap address\n");
 }
 
 async function deployShariaDCA(network: string) {
@@ -153,8 +153,8 @@ async function deployShariaDCA(network: string) {
 async function main() {
   console.log("🚀 Tayeb Mainnet Deployment\n");
   console.log("This script will deploy:\n");
-  console.log("1. ShariaCompliance & RemoteSwapInitiator (via deploy-core)");
-  console.log("2. ShariaSwap");
+  console.log("1. ShariaCompliance & CrosschainSwapInitiator (via deploy-core)");
+  console.log("2. ShariaLocalSwap");
   console.log("3. ShariaDCA\n");
 
   const network = process.env.HARDHAT_NETWORK || "moonbeam";
@@ -166,8 +166,8 @@ async function main() {
     console.log("⚠️  Make sure you have sufficient balance\n");
   }
 
-  runSubScript("Core Contracts (ShariaCompliance & RemoteSwapInitiator)", "deploy/deploy-core.ts", network);
-  await deployShariaSwap(network);
+  runSubScript("Core Contracts (ShariaCompliance & CrosschainSwapInitiator)", "deploy/deploy-core.ts", network);
+  await deployShariaLocalSwap(network);
   await deployShariaDCA(network);
 
   console.log("=".repeat(60));

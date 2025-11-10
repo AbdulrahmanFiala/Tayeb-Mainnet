@@ -3,7 +3,7 @@
 ## Quick Commands
 
 ```bash
-# Deploy ShariaCompliance + RemoteSwapInitiator (core)
+# Deploy ShariaCompliance + CrosschainSwapInitiator (core)
 npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 
 # Initiate swap (interactive)
@@ -32,7 +32,7 @@ SELL_CALL_INDEX = 0
 
 ```javascript
 const remoteSwapInitiator = await ethers.getContractAt(
-  "RemoteSwapInitiator",
+  "CrosschainSwapInitiator",
   REMOTE_SWAP_INITIATOR_ADDRESS
 );
 
@@ -85,7 +85,7 @@ const ASSETS = {
 - [ ] HRMP channel exists (Moonbeam ↔ Hydration)
 - [ ] Assets registered as XC-20s
 - [ ] Sovereign account funded with HDX
-- [ ] RemoteSwapInitiator funded with GLMR
+- [ ] CrosschainSwapInitiator funded with GLMR
 - [ ] Target token is Sharia compliant
 
 ## Monitoring

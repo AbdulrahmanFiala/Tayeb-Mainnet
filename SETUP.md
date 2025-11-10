@@ -25,7 +25,7 @@ MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
 
 ## 3. Pick a Router + WETH
 
-ShariaSwap and ShariaDCA act as adapters for any Uniswap V2-compatible router. Update `config/deployedContracts.json` with the router and WETH addresses you intend to use.
+ShariaLocalSwap and ShariaDCA act as adapters for any Uniswap V2-compatible router. Update `config/deployedContracts.json` with the router and WETH addresses you intend to use.
 
 Example (Moonbeam mainnet / StellaSwap):
 
@@ -54,8 +54,8 @@ Deploy to Moonbeam using the preconfigured script:
 npm run deploy:mainnet
 ```
 
-`npm run deploy:mainnet` runs the full `deploy-all` workflow (core + ShariaSwap + ShariaDCA).  
-`deploy-core` deploys `ShariaCompliance` and `RemoteSwapInitiator`.
+`npm run deploy:mainnet` runs the full `deploy-all` workflow (core + ShariaLocalSwap + ShariaDCA).  
+`deploy-core` deploys `ShariaCompliance` and `CrosschainSwapInitiator`.
 
 All contract addresses and metadata are written back to `config/deployedContracts.json` for frontend consumption.
 

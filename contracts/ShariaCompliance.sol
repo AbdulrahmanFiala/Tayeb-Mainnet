@@ -98,20 +98,20 @@ contract ShariaCompliance is Ownable {
             revert CoinAlreadyExists(coinId);
         }
         
-        if (tokenAddress != address(0)) {
-            // Prevent duplicate addresses
-            string memory existingSymbol = addressToSymbol[tokenAddress];
-            if (bytes(existingSymbol).length > 0) {
-                revert("Address already registered");
-            }
-            // Prevent duplicate symbols
-            address existingAddress = symbolToAddress[symbol];
-            if (existingAddress != address(0)) {
-                revert("Symbol already registered");
-            }
-            addressToSymbol[tokenAddress] = symbol;
-            symbolToAddress[symbol] = tokenAddress;
+        if (tokenAddress == address(0)) {
+            revert("Token address required");
         }
+
+        string memory existingSymbol = addressToSymbol[tokenAddress];
+        if (bytes(existingSymbol).length > 0) {
+            revert("Address already registered");
+        }
+        address existingAddress = symbolToAddress[symbol];
+        if (existingAddress != address(0)) {
+            revert("Symbol already registered");
+        }
+        addressToSymbol[tokenAddress] = symbol;
+        symbolToAddress[symbol] = tokenAddress;
 
         shariaCoins[coinId] = ShariaCoin({
             id: coinId,

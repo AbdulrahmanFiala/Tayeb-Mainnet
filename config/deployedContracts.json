@@ -9,9 +9,9 @@
   },
   "main": {
     "shariaCompliance": "0x0f2aeaC3558dBE8061d3a94f14857917E4CC9dad",
-    "shariaSwap": null,
+    "shariaLocalSwap": null,
     "shariaDCA": null,
-    "remoteSwapInitiator": "0xe58574232BA8Ee084943977af055948c0FD9fBc0"
+    "crosschainSwapInitiator": "0xe58574232BA8Ee084943977af055948c0FD9fBc0"
   },
   "tokens": {},
   "pairs": {},

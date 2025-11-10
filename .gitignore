@@ -10,10 +10,6 @@ typechain-types/
 .env
 .env.local
 
-# Ink! / Rust (legacy)
-target/
-Cargo.lock
-
 # Build outputs
 dist/
 build/

@@ -9,12 +9,12 @@ import "./ShariaCompliance.sol";
 import "./interfaces/IXcmTransactor.sol";
 
 /**
- * @title RemoteSwapInitiator
+ * @title CrosschainSwapInitiator
  * @notice Initiates cross-chain swaps from Moonbeam to Hydration via XCM
  * @dev Locks assets on Moonbeam, sends XCM message to execute swap on Hydration,
  *      and receives swapped assets back via XCM
  */
-contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
+contract CrosschainSwapInitiator is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============================================================================
@@ -75,7 +75,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
     // EVENTS
     // ============================================================================
 
-    event RemoteSwapInitiated(
+    event CrosschainSwapInitiated(
         bytes32 indexed swapId,
         address indexed user,
         address sourceToken,
@@ -85,19 +85,19 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
         bytes32 xcmMessageHash
     );
 
-    event RemoteSwapCompleted(
+    event CrosschainSwapCompleted(
         bytes32 indexed swapId,
         address indexed user,
         uint256 targetAmount
     );
 
-    event RemoteSwapFailed(
+    event CrosschainSwapFailed(
         bytes32 indexed swapId,
         address indexed user,
         string reason
     );
 
-    event RemoteSwapCancelled(
+    event CrosschainSwapCancelled(
         bytes32 indexed swapId,
         address indexed user
     );
@@ -129,7 +129,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
     // ============================================================================
 
     /**
-     * @notice Initialize the RemoteSwapInitiator contract
+     * @notice Initialize the CrosschainSwapInitiator contract
      * @param _shariaCompliance Address of ShariaCompliance contract
      * @param _xcmTransactor Address of XCM Transactor precompile (0x806)
      * @param _hydrationParachainId Hydration parachain ID (2034 for mainnet)
@@ -231,7 +231,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
 
         remoteSwaps[swapId].xcmMessageHash = xcmHash;
 
-        emit RemoteSwapInitiated(
+        emit CrosschainSwapInitiated(
             swapId,
             msg.sender,
             sourceToken,
@@ -268,7 +268,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
         // Refund source tokens
         IERC20(swap.sourceToken).safeTransfer(swap.user, swap.sourceAmount);
 
-        emit RemoteSwapCancelled(swapId, msg.sender);
+        emit CrosschainSwapCancelled(swapId, msg.sender);
     }
 
     /**
@@ -289,7 +289,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
 
         swap.status = SwapStatus.Completed;
 
-        emit RemoteSwapCompleted(swapId, swap.user, targetAmount);
+        emit CrosschainSwapCompleted(swapId, swap.user, targetAmount);
     }
 
     /**
@@ -309,7 +309,7 @@ contract RemoteSwapInitiator is Ownable, ReentrancyGuard {
 
         swap.status = SwapStatus.Failed;
 
-        emit RemoteSwapFailed(swapId, swap.user, reason);
+        emit CrosschainSwapFailed(swapId, swap.user, reason);
     }
 
     // ============================================================================

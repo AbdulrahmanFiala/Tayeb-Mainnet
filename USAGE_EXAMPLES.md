@@ -21,7 +21,7 @@ import deployedContracts from './config/deployedContracts.json';
 
 // Connect to contracts
 const shariaSwap = new ethers.Contract(
-  deployedContracts.main.shariaSwap,
+  deployedContracts.main.shariaLocalSwap,
   shariaSwapABI,
   provider
 );
@@ -37,12 +37,12 @@ const usdtAddress = halaCoins.coins.find(c => c.symbol === "USDT")?.addresses.mo
 ```typescript
 import { ethers } from "ethers";
 import { BrowserProvider } from "ethers";
-import ShariaSwapABI from "./artifacts/contracts/ShariaSwap.sol/ShariaSwap.json";
+import ShariaLocalSwapABI from "./artifacts/contracts/ShariaLocalSwap.sol/ShariaLocalSwap.json";
 import deployedContracts from "./config/deployedContracts.json";
 
-function useShariaSwap() {
+function useShariaLocalSwap() {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [shariaSwap, setShariaSwap] = useState<ethers.Contract | null>(null);
+  const [shariaSwap, setShariaLocalSwap] = useState<ethers.Contract | null>(null);
 
   useEffect(() => {
     if (window.ethereum) {
@@ -50,11 +50,11 @@ function useShariaSwap() {
       setProvider(provider);
       
       const contract = new ethers.Contract(
-        deployedContracts.main.shariaSwap,
-        ShariaSwapABI.abi,
+        deployedContracts.main.shariaLocalSwap,
+        ShariaLocalSwapABI.abi,
         await provider.getSigner()
       );
-      setShariaSwap(contract);
+      setShariaLocalSwap(contract);
     }
   }, []);
 
@@ -159,7 +159,7 @@ import halaCoins from './config/halaCoins.json';
 import deployedContracts from './config/deployedContracts.json';
 
 const shariaSwap = new ethers.Contract(
-  deployedContracts.main.shariaSwap,
+  deployedContracts.main.shariaLocalSwap,
   shariaSwapABI,
   provider
 );
@@ -191,7 +191,7 @@ import halaCoins from './config/halaCoins.json';
 import deployedContracts from './config/deployedContracts.json';
 
 const shariaSwap = new ethers.Contract(
-  deployedContracts.main.shariaSwap,
+  deployedContracts.main.shariaLocalSwap,
   shariaSwapABI,
   signer
 );
@@ -561,7 +561,7 @@ console.log(`${symbol} address: ${tokenAddress}`);
 async function swapTokens(tokenIn: string, tokenOut: string, amountIn: bigint) {
   try {
     const shariaSwap = new ethers.Contract(
-      deployedContracts.main.shariaSwap,
+      deployedContracts.main.shariaLocalSwap,
       shariaSwapABI,
       signer
     );
@@ -621,12 +621,12 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { BrowserProvider } from 'ethers';
 import deployedContracts from './config/deployedContracts.json';
-import ShariaSwapABI from './artifacts/contracts/ShariaSwap.sol/ShariaSwap.json';
+import ShariaLocalSwapABI from './artifacts/contracts/ShariaLocalSwap.sol/ShariaLocalSwap.json';
 
 function SwapInterface() {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
-  const [shariaSwap, setShariaSwap] = useState<ethers.Contract | null>(null);
+  const [shariaSwap, setShariaLocalSwap] = useState<ethers.Contract | null>(null);
   const [amount, setAmount] = useState('');
 
   useEffect(() => {
@@ -635,14 +635,14 @@ function SwapInterface() {
         const provider = new BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(
-          deployedContracts.main.shariaSwap,
-          ShariaSwapABI.abi,
+          deployedContracts.main.shariaLocalSwap,
+          ShariaLocalSwapABI.abi,
           signer
         );
         
         setProvider(provider);
         setSigner(signer);
-        setShariaSwap(contract);
+        setShariaLocalSwap(contract);
       }
     }
     connect();
