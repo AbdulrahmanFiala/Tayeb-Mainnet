@@ -4,25 +4,37 @@ import * as fs from "fs";
 import * as path from "path";
 import halaCoinsConfig from "../../config/halaCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
+import xcmRawConfig from "../../config/xcmConfig.json";
 import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
 import { deployOrVerifyContract } from "../utils/deployHelpers";
 
 const { ethers } = hre;
 
+interface XcmConfig {
+  moonbeam: {
+    xcmTransactorPrecompile: string;
+  };
+  hydration: {
+    parachainId: number;
+    omnipoolPalletIndex: number;
+    sellCallIndex: number;
+  };
+}
+
 /**
- * Deploy main contracts to Moonbeam (or Chopsticks fork)
- * 
+ * Deploy core contracts to Moonbeam (or a Chopsticks fork)
+ *
  * This script deploys:
  * 1. ShariaCompliance
- * 2. ShariaSwap
- * 3. ShariaDCA
- * 
- * Reads DEX configuration and token config from JSON files
+ * 2. RemoteSwapInitiator
+ *
+ * Reads token config from JSON files and XCM settings for the bridge.
  */
 async function main() {
   // Load environment variables and config
   dotenv.config();
   const config = halaCoinsConfig as HalaCoinsConfig;
+  const xcmConfig = xcmRawConfig as XcmConfig;
 
   const [deployer] = await ethers.getSigners();
 
@@ -34,21 +46,17 @@ async function main() {
   // Read DEX configuration from deployedContracts.json
   // ============================================================================
   const contractsConfig = deployedContractsConfig as DeployedContracts;
-  const WETH_ADDRESS =
-    contractsConfig.amm.weth ||
-    ethers.getAddress("0xAcc15dC74880C9944775448304B263D191c6077F");
-  const DEX_ROUTER = contractsConfig.amm.router;
 
-  if (!DEX_ROUTER) {
-    console.error("❌ Error: DEX router address not found in deployedContracts.json!");
-    console.log("\n📝 Please update config/deployedContracts.json with your preferred router address.");
-    console.log('   Example: "amm": { "router": "0x...", "weth": "0xAcc1..." }\n');
+  if (!xcmConfig?.moonbeam?.xcmTransactorPrecompile || !xcmConfig?.hydration) {
+    console.error("❌ Error: Missing XCM configuration in config/xcmConfig.json");
     process.exit(1);
   }
 
-  console.log("📖 Using DEX configuration from deployedContracts.json:");
-  console.log("   Router:", DEX_ROUTER);
-  console.log("   WETH:", WETH_ADDRESS);
+  console.log("📖 Loaded XCM configuration:");
+  console.log("   XCM Transactor:", xcmConfig.moonbeam.xcmTransactorPrecompile);
+  console.log("   Hydration Parachain ID:", xcmConfig.hydration.parachainId);
+  console.log("   Omnipool Pallet Index:", xcmConfig.hydration.omnipoolPalletIndex);
+  console.log("   Sell Call Index:", xcmConfig.hydration.sellCallIndex);
   console.log();
 
   // ============================================================================
@@ -67,33 +75,24 @@ async function main() {
   console.log();
 
   // ============================================================================
-  // Deploy ShariaSwap (Idempotent)
+  // Deploy RemoteSwapInitiator (Idempotent)
   // ============================================================================
-  console.log("💱 Deploying ShariaSwap...");
-  const shariaSwapAddress = await deployOrVerifyContract(
-    "ShariaSwap",
-    contractsConfig.main.shariaSwap,
+  console.log("🌉 Deploying RemoteSwapInitiator...");
+  const remoteSwapInitiatorAddress = await deployOrVerifyContract(
+    "RemoteSwapInitiator",
+    contractsConfig.main.remoteSwapInitiator,
     async () => {
-      const ShariaSwap = await ethers.getContractFactory("ShariaSwap");
-      return await ShariaSwap.deploy(shariaComplianceAddress, DEX_ROUTER, WETH_ADDRESS);
+      const RemoteSwapInitiator = await ethers.getContractFactory("RemoteSwapInitiator");
+      return await RemoteSwapInitiator.deploy(
+        shariaComplianceAddress,
+        xcmConfig.moonbeam.xcmTransactorPrecompile,
+        xcmConfig.hydration.parachainId,
+        xcmConfig.hydration.omnipoolPalletIndex,
+        xcmConfig.hydration.sellCallIndex
+      );
     }
   );
-  const shariaSwap = await ethers.getContractAt("ShariaSwap", shariaSwapAddress);
-  console.log();
-
-  // ============================================================================
-  // Deploy ShariaDCA (Idempotent)
-  // ============================================================================
-  console.log("📅 Deploying ShariaDCA...");
-  const shariaDCAAddress = await deployOrVerifyContract(
-    "ShariaDCA",
-    contractsConfig.main.shariaDCA,
-    async () => {
-      const ShariaDCA = await ethers.getContractFactory("ShariaDCA");
-      return await ShariaDCA.deploy(shariaComplianceAddress, DEX_ROUTER, WETH_ADDRESS);
-    }
-  );
-  const shariaDCA = await ethers.getContractAt("ShariaDCA", shariaDCAAddress);
+  const remoteSwapInitiator = await ethers.getContractAt("RemoteSwapInitiator", remoteSwapInitiatorAddress);
   console.log();
 
   // ============================================================================
@@ -109,8 +108,9 @@ async function main() {
     amm: contractsConfig.amm, // Preserve DEX configuration if already set
     main: {
       shariaCompliance: shariaComplianceAddress,
-      shariaSwap: shariaSwapAddress,
-      shariaDCA: shariaDCAAddress,
+      shariaSwap: contractsConfig.main.shariaSwap ?? null,
+      shariaDCA: contractsConfig.main.shariaDCA ?? null,
+      remoteSwapInitiator: remoteSwapInitiatorAddress,
     },
     metadata: {
       ...contractsConfig.metadata,
@@ -184,10 +184,8 @@ async function main() {
   console.log(`\n📊 Registration summary: ${registeredCount} new, ${skippedCount} already registered`);
   console.log();
 
-  // Note: ShariaSwap and ShariaDCA now query ShariaCompliance directly
-  // No separate registration needed - addresses are stored in ShariaCompliance
   console.log("✅ Token addresses are now stored in ShariaCompliance");
-  console.log("   ShariaSwap and ShariaDCA will query ShariaCompliance automatically");
+  console.log("   RemoteSwapInitiator pulls compliance data on-chain automatically");
   console.log();
 
   // ============================================================================
@@ -198,21 +196,18 @@ async function main() {
   console.log("📋 DEPLOYMENT SUMMARY");
   console.log("=".repeat(60));
   console.log("ShariaCompliance:", shariaComplianceAddress);
-  console.log("ShariaSwap:      ", shariaSwapAddress);
-  console.log("ShariaDCA:       ", shariaDCAAddress);
+  console.log("RemoteSwapInit:  ", remoteSwapInitiatorAddress);
   console.log("=".repeat(60));
   console.log();
   console.log("🔧 Next Steps:");
-  console.log("1. Confirm your chosen router has liquidity for the intended trading pairs.");
-  console.log("2. Test swaps through ShariaSwap using explicit paths.");
-  console.log("3. Register more Sharia-compliant tokens via registerShariaCoin() or npm run sync:coins.");
-  console.log("4. Run automation script: npx hardhat run scripts/automation/auto-execute-dca.ts --network moonbeam");
+  console.log("1. Configure RemoteSwapInitiator (fund GLMR, ensure XC-20 registrations).");
+  console.log("2. Register more Sharia-compliant tokens via registerShariaCoin() or npm run sync:coins.");
+  console.log("3. (Optional) Deploy ShariaSwap and ShariaDCA via npm run deploy:mainnet");
   console.log();
   console.log("🔍 Verify contracts on Moonscan (optional) - requires ETHERSCAN_API_KEY");
   console.log("Get API key from: https://moonscan.io/myapikey");
   console.log(`npx hardhat verify --network moonbeam ${shariaComplianceAddress}`);
-  console.log(`npx hardhat verify --network moonbeam ${shariaSwapAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS}`);
-  console.log(`npx hardhat verify --network moonbeam ${shariaDCAAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS}`);
+  console.log(`npx hardhat verify --network moonbeam ${remoteSwapInitiatorAddress} ${shariaComplianceAddress} ${xcmConfig.moonbeam.xcmTransactorPrecompile} ${xcmConfig.hydration.parachainId} ${xcmConfig.hydration.omnipoolPalletIndex} ${xcmConfig.hydration.sellCallIndex}`);
 }
 
 main()

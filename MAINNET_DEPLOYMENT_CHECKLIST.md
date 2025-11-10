@@ -46,7 +46,7 @@ MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
 # 2. Compile contracts
 npx hardhat compile
 
-# 3. Deploy ShariaCompliance
+# 3. Deploy core contracts (ShariaCompliance + RemoteSwapInitiator)
 npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 ```
 
@@ -63,36 +63,25 @@ Balance: X.XX GLMR
 **Checklist**:
 - [ ] Deployment successful
 - [ ] Copy `ShariaCompliance` address: `0x_______________`
-- [ ] Save deployment block number: `_______`
+- [ ] Copy `RemoteSwapInitiator` address: `0x_______________`
+- [ ] Save deployment block number(s): `_______`
 - [ ] Verify on Moonscan: `https://moonscan.io/address/0xABC123...`
 - [ ] Update `.env`: `SHARIA_COMPLIANCE_ADDRESS=0xABC123...`
 
-### Phase 2: Deploy RemoteSwapInitiator
+### Phase 2: Deploy ShariaSwap & ShariaDCA (optional)
+
+> Easiest path: rerun the full deployer (idempotent)  
+> `npm run deploy:mainnet`
 
 ```bash
-# Deploy RemoteSwapInitiator
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
-```
-
-**Expected Output**:
-```
-🚀 Deploying RemoteSwapInitiator...
-Account: 0xYourAddress
-Balance: X.XX GLMR
-
-XCM Transactor: 0x0000000000000000000000000000000000000806
-ShariaCompliance: 0xABC123...
-Hydration Parachain ID: 2034
-
-✅ RemoteSwapInitiator deployed at: 0xDEF456...
+# Deploy ShariaSwap + ShariaDCA only (idempotent)
+npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 ```
 
 **Checklist**:
 - [ ] Deployment successful
-- [ ] Copy `RemoteSwapInitiator` address: `0x_______________`
 - [ ] Save deployment block number: `_______`
-- [ ] Verify on Moonscan: `https://moonscan.io/address/0xDEF456...`
-- [ ] Update `.env`: `REMOTE_SWAP_INITIATOR_ADDRESS=0xDEF456...`
+- [ ] `deployedContracts.json` updated with `shariaSwap` / `shariaDCA`
 
 ### Phase 3: Contract Verification
 
@@ -100,15 +89,23 @@ Hydration Parachain ID: 2034
 # Verify ShariaCompliance
 npx hardhat verify --network moonbeam 0xABC123...
 
-# Verify RemoteSwapInitiator
+# Verify RemoteSwapInitiator (already deployed via deploy-core)
 npx hardhat verify --network moonbeam 0xDEF456... \
   "0x0000000000000000000000000000000000000806" \
   "0xABC123..."
+
+# (Optional) Verify ShariaDCA
+npx hardhat verify --network moonbeam 0x_____________ \
+  0xABC123... \
+  0xRouterAddress... \
+  0xWGLMRAddress...
 ```
 
 **Checklist**:
 - [ ] ShariaCompliance verified on Moonscan
+- [ ] ShariaSwap verified on Moonscan (if deployed)
 - [ ] RemoteSwapInitiator verified on Moonscan
+- [ ] ShariaDCA verified on Moonscan (if deployed)
 - [ ] Source code visible on explorer
 - [ ] Contract ABI available
 
@@ -123,6 +120,7 @@ npx hardhat verify --network moonbeam 0xDEF456... \
 {
   "ShariaCompliance": "0xABC123...",
   "RemoteSwapInitiator": "0xDEF456...",
+  "ShariaDCA": "0x_____________",
   "deploymentBlock": 5750500,
   "network": "moonbeam-mainnet",
   "timestamp": "2025-11-09T10:00:00Z"

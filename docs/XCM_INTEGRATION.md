@@ -118,25 +118,23 @@ This installs:
 
 ### 2. Deploy Core Contracts
 
-First, deploy the core Tayeb contracts:
+First, deploy the essential on-chain components:
+
+```bash
+npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
+```
+
+This deploys:
+- ShariaCompliance (token registry)
+- RemoteSwapInitiator (XCM bridge entrypoint)
+
+To deploy the full Tayeb stack (adds ShariaSwap + ShariaDCA), run:
 
 ```bash
 npm run deploy:moonbeam
 ```
 
-This deploys:
-- ShariaCompliance
-- ShariaSwap
-- ShariaDCA
-- Mock tokens and AMM
-
-### 3. Deploy RemoteSwapInitiator
-
-```bash
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
-```
-
-This deploys the `RemoteSwapInitiator` contract and saves the address to `config/deployedContracts.json`.
+Both scripts write addresses and metadata to `config/deployedContracts.json`.
 
 **Configuration used:**
 - ShariaCompliance address (from previous deployment)
@@ -145,7 +143,7 @@ This deploys the `RemoteSwapInitiator` contract and saves the address to `config
 - Omnipool pallet index: `75`
 - Sell call index: `0`
 
-### 4. Fund the Contract
+### 3. Fund the Contract
 
 The RemoteSwapInitiator needs native DEV for XCM fees:
 

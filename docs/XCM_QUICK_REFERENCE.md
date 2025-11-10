@@ -3,8 +3,8 @@
 ## Quick Commands
 
 ```bash
-# Deploy RemoteSwapInitiator
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
+# Deploy ShariaCompliance + RemoteSwapInitiator (core)
+npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
 
 # Initiate swap (interactive)
 npx hardhat run scripts/xcm/initiate-remote-swap.ts --network moonbeam

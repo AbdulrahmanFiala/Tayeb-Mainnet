@@ -54,21 +54,12 @@ Deploy to Moonbeam (or your Chopsticks fork) using the preconfigured script:
 ```bash
 # Moonbeam mainnet (GLMR, real funds)
 npm run deploy:mainnet
-
 # Chopsticks fork (set HARDHAT_NETWORK=chopsticks with proper RPC)
 npx hardhat run scripts/deploy/deploy-core.ts --network chopsticks
 ```
 
-This deploys:
-- `ShariaCompliance`
-- `ShariaSwap` (configured with your router + WETH)
-- `ShariaDCA`
-
-To include the XCM bridge (`RemoteSwapInitiator`), run:
-
-```bash
-npm run deploy:xcm -- --network moonbeam   # or chopsticks
-```
+`npm run deploy:mainnet` runs the full `deploy-all` workflow (core + ShariaSwap + ShariaDCA).  
+`deploy-core` (shown for Chopsticks) just deploys `ShariaCompliance` and `RemoteSwapInitiator`.
 
 All contract addresses and metadata are written back to `config/deployedContracts.json` for frontend consumption.
 

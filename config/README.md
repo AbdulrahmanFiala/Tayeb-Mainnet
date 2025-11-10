@@ -26,14 +26,14 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 ## How Scripts Update Config Files
 
 ### `deploy/deploy-core.ts`
-- Deploys ShariaCompliance, ShariaSwap, ShariaDCA
+- Deploys ShariaCompliance and RemoteSwapInitiator
 - Registers coins from `halaCoins.json` to ShariaCompliance contract
 - Updates `deployedContracts.json`: Adds addresses to `main` section
 - Leaves `amm.router` / `amm.weth` untouched (expects them to be pre-filled)
 
 ### `deploy/deploy-all.ts`
-- Runs `deploy/deploy-core.ts` followed by `xcm/deploy-remote-swap.ts`
-- Useful for mainnet or orchestrated deployments
+- Runs `deploy/deploy-core.ts`, then deploys ShariaSwap and ShariaDCA inline
+- Useful for mainnet or orchestrated deployments (deploys/updates everything in one go)
 
 ### `deploy/sync-coins-from-contract.ts`
 - Reads all coins from ShariaCompliance contract

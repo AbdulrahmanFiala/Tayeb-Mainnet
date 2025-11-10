@@ -151,7 +151,7 @@ cp .env.example .env
 # Compile, test, and deploy
 npm run compile
 npm test
-npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaSwap + ShariaDCA (+ RemoteSwapInitiator)
+npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaSwap + RemoteSwapInitiator + ShariaDCA
 ```
 
 ### Target Networks

@@ -25,7 +25,6 @@ MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
 ```bash
 # Deploy ShariaCompliance and RemoteSwapInitiator
 npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
 ```
 
 **Save the deployment info**:
