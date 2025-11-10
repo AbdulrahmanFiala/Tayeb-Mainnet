@@ -6,13 +6,16 @@ cache/
 artifacts/
 typechain-types/
 
+# Local binaries
+bin/
+
 # Environment
 .env
 .env.local
 
-# Ink! / Rust (legacy)
-target/
-Cargo.lock
+# Local chain state
+.moonbeam-node/
+.chopsticks-cache/
 
 # Build outputs
 dist/
@@ -41,3 +44,4 @@ coverage.json
 
 # Deployment artifacts
 deployments/
+/.chopsticks-cache
