@@ -1,6 +1,7 @@
 import { run } from "hardhat";
 import halaCoinsConfig from "../../config/halaCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
+import xcmConfig from "../../config/xcmConfig.json";
 import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
 
 /**
@@ -178,6 +179,30 @@ async function main() {
     if (result === "verified") results.main.verified++;
     else results.main.failed++;
     await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  // RemoteSwapInitiator (shariaCompliance, xcmTransactor, parachainId, palletIndex, callIndex)
+  const remoteSwapAddress = contractsConfig.main?.remoteSwapInitiator;
+  const remoteArgs = [
+    shariaComplianceAddress,
+    xcmConfig?.moonbeam?.xcmTransactorPrecompile,
+    xcmConfig?.hydration?.parachainId,
+    xcmConfig?.hydration?.omnipoolPalletIndex,
+    xcmConfig?.hydration?.sellCallIndex,
+  ];
+  if (
+    remoteSwapAddress &&
+    remoteArgs.every((arg) => arg !== undefined && arg !== null) &&
+    typeof remoteArgs[2] === "number" &&
+    typeof remoteArgs[3] === "number" &&
+    typeof remoteArgs[4] === "number"
+  ) {
+    const result = await verifyContract("main", "RemoteSwapInitiator", remoteSwapAddress, remoteArgs, "RemoteSwapInitiator");
+    if (result === "verified") results.main.verified++;
+    else results.main.failed++;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  } else {
+    console.log("⏭️  RemoteSwapInitiator - Missing configuration values, skipping");
   }
 
   // ============================================================================

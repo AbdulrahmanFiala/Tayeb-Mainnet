@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { DeployedContracts } from "../../config/types";
-import { deployOrVerifyContract } from "../utils/deployHelpers";
+import { buildTxOverrides, deployOrVerifyContract } from "../utils/deployHelpers";
 
 const { ethers } = hre;
 
@@ -43,6 +43,7 @@ async function deployShariaSwap(network: string) {
 
   const configPath = path.join(__dirname, "..", "..", "config", "deployedContracts.json");
   const contractsConfig = loadContractsConfig();
+  const txOverrides = await buildTxOverrides();
 
   if (!contractsConfig.main.shariaCompliance) {
     throw new Error("ShariaCompliance address not found. Run deploy-core first.");
@@ -65,7 +66,8 @@ async function deployShariaSwap(network: string) {
       return await ShariaSwap.deploy(
         contractsConfig.main.shariaCompliance!,
         router,
-        weth
+        weth,
+        txOverrides
       );
     }
   );
@@ -97,6 +99,7 @@ async function deployShariaDCA(network: string) {
 
   const configPath = path.join(__dirname, "..", "..", "config", "deployedContracts.json");
   const contractsConfig = loadContractsConfig();
+  const txOverrides = await buildTxOverrides();
 
   if (!contractsConfig.main.shariaCompliance) {
     throw new Error("ShariaCompliance address not found. Run deploy-core first.");
@@ -119,7 +122,8 @@ async function deployShariaDCA(network: string) {
       return await ShariaDCA.deploy(
         contractsConfig.main.shariaCompliance!,
         router,
-        weth
+        weth,
+        txOverrides
       );
     }
   );

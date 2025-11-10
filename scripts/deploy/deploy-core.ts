@@ -6,7 +6,7 @@ import halaCoinsConfig from "../../config/halaCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
 import xcmRawConfig from "../../config/xcmConfig.json";
 import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
-import { deployOrVerifyContract } from "../utils/deployHelpers";
+import { buildTxOverrides, deployOrVerifyContract } from "../utils/deployHelpers";
 
 const { ethers } = hre;
 
@@ -59,6 +59,8 @@ async function main() {
   console.log("   Sell Call Index:", xcmConfig.hydration.sellCallIndex);
   console.log();
 
+  const txOverrides = await buildTxOverrides();
+
   // ============================================================================
   // Deploy ShariaCompliance (Idempotent)
   // ============================================================================
@@ -68,7 +70,7 @@ async function main() {
     contractsConfig.main.shariaCompliance,
     async () => {
       const ShariaCompliance = await ethers.getContractFactory("ShariaCompliance");
-      return await ShariaCompliance.deploy();
+      return await ShariaCompliance.deploy(txOverrides);
     }
   );
   const shariaCompliance = await ethers.getContractAt("ShariaCompliance", shariaComplianceAddress);
@@ -88,7 +90,8 @@ async function main() {
         xcmConfig.moonbeam.xcmTransactorPrecompile,
         xcmConfig.hydration.parachainId,
         xcmConfig.hydration.omnipoolPalletIndex,
-        xcmConfig.hydration.sellCallIndex
+        xcmConfig.hydration.sellCallIndex,
+        txOverrides
       );
     }
   );
@@ -160,14 +163,16 @@ async function main() {
     }
     
     try {
-        const tokenAddressToUse = tokenAddress ?? ethers.ZeroAddress;
-        const tx = await shariaCompliance.registerShariaCoin(
-            coin.symbol,
-            coin.name,
-            coin.symbol,
-            tokenAddressToUse,
-            coin.complianceReason
-        );
+            const tokenAddressToUse = tokenAddress ?? ethers.ZeroAddress;
+            const registrationOverrides = await buildTxOverrides();
+            const tx = await shariaCompliance.registerShariaCoin(
+                coin.symbol,
+                coin.name,
+                coin.symbol,
+                tokenAddressToUse,
+                coin.complianceReason,
+                registrationOverrides
+            );
         await tx.wait();
         console.log(`✅ Registered ${coin.symbol} (${coin.name}) in ShariaCompliance`);
         registeredCount++;

@@ -1,5 +1,5 @@
 import hre from "hardhat";
-import type { BaseContract } from "ethers";
+import type { BaseContract, BigNumberish } from "ethers";
 
 const { ethers } = hre;
 
@@ -39,5 +39,49 @@ export async function deployOrVerifyContract<T extends BaseContract>(
   const address = await contract.getAddress();
   console.log(`✅ ${contractName} deployed to: ${address}`);
   return address;
+}
+
+type TxOverrides =
+  | {
+      maxFeePerGas: BigNumberish;
+      maxPriorityFeePerGas: BigNumberish;
+    }
+  | {
+      gasPrice: BigNumberish;
+    }
+  | Record<string, never>;
+
+/**
+ * Builds transaction overrides with gas parameters appropriate for Moonbeam.
+ * Ensures the submitted fee is above the current base fee to avoid "gas price less than block base fee".
+ */
+export async function buildTxOverrides(): Promise<TxOverrides> {
+  const feeData = await ethers.provider.getFeeData();
+
+  const gwei = (value: string) => ethers.parseUnits(value, "gwei");
+
+  const priority =
+    feeData.maxPriorityFeePerGas && feeData.maxPriorityFeePerGas > 0n
+      ? feeData.maxPriorityFeePerGas
+      : gwei("2");
+
+  const baseCandidate = feeData.maxFeePerGas ?? feeData.gasPrice ?? gwei("150");
+
+  const buffer = gwei("5");
+  const maxFee = baseCandidate + priority + buffer;
+
+  if (feeData.maxFeePerGas !== null) {
+    return {
+      maxFeePerGas: maxFee,
+      maxPriorityFeePerGas: priority,
+    };
+  }
+
+  if (feeData.gasPrice) {
+    const gasPrice = feeData.gasPrice > baseCandidate ? feeData.gasPrice : baseCandidate + buffer;
+    return { gasPrice };
+  }
+
+  return {};
 }
 
