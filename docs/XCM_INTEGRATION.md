@@ -2,13 +2,13 @@
 
 ## Overview
 
-This guide explains how to use Tayeb's cross-chain swap functionality to execute Sharia-compliant swaps from Moonbeam to Hydration using Polkadot's Cross-Consensus Messaging (XCM) protocol. The same flow applies when working against a Chopsticks fork of Moonbeam/Hydration.
+This guide explains how to use Tayeb's cross-chain swap functionality to execute Sharia-compliant swaps from Moonbeam to Hydration using Polkadot's Cross-Consensus Messaging (XCM) protocol.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                 Moonbeam (Mainnet / Chopsticks)                │
+│                 Moonbeam (Mainnet)                             │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  User Wallet                                             │   │
 │  │    ↓                                                     │   │
@@ -97,7 +97,7 @@ Send HDX tokens to the sovereign account from any Hydration wallet.
 
 **Fund GLMR (Moonbeam):**
 - Acquire GLMR via exchange or bridge (production)
-- For Chopsticks forks, pre-funded accounts are available in the fork
+- Ensure your Moonbeam account is funded before initiating swaps
 
 **Get HDX tokens (Hydration):**
 - Request from Hydration team or fund via cross-chain transfer
@@ -516,7 +516,7 @@ npx hardhat test test/RemoteSwapInitiator.test.ts
 
 ### Fork / Test Testing
 
-1. Deploy contracts on a Chopsticks fork (Moonbeam + Hydration)
+1. Deploy contracts on Moonbeam mainnet (ensure Hydration prerequisites are met)
 2. Fund the Hydration sovereign account with HDX
 3. Execute a small test swap (1-10 tokens)
 4. Monitor XCM message delivery
@@ -528,9 +528,8 @@ npx hardhat test test/RemoteSwapInitiator.test.ts
 Full end-to-end test:
 
 ```bash
-# 1. Deploy everything
-npm run deploy:mainnet           # or custom Hardhat network pointing at your fork
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
+# 1. Deploy or verify contracts
+npm run deploy:mainnet
 
 # 2. Fund contracts
 # Send GLMR to RemoteSwapInitiator
@@ -539,7 +538,7 @@ npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
 npx hardhat run scripts/xcm/initiate-remote-swap.ts --network moonbeam
 
 # 4. Monitor status
-# Check Subscan (Hydration) or your fork logs for XCM messages
+# Check Moonscan and Hydration Subscan for XCM messages
 ```
 
 ## Resources
@@ -591,7 +590,7 @@ For questions or issues, please open a GitHub issue or contact the Tayeb team.
 
 **Last Updated:** November 2025  
 **Version:** 2.0.0  
-**Networks:** Moonbeam Mainnet & Hydration (or corresponding Chopsticks forks)
+**Networks:** Moonbeam Mainnet & Hydration
 
 
 

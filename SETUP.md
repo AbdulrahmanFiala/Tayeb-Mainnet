@@ -1,6 +1,6 @@
-# Tayeb Setup Guide – Moonbeam & Chopsticks Forks
+# Tayeb Setup Guide – Moonbeam Mainnet
 
-This guide targets Moonbeam mainnet deployments and Chopsticks forks (forked Moonbeam/Hydration) used for local testing. Legacy testnet flows are no longer supported.
+This guide targets Moonbeam mainnet deployments. Legacy testnet flows are no longer supported.
 
 ## 1. Install Dependencies
 
@@ -19,8 +19,6 @@ Populate the following variables:
 ```
 PRIVATE_KEY=0xYourPrivateKey
 MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
-# Optional: custom RPC for a Chopsticks fork (e.g. http://127.0.0.1:9949)
-CHOPSTICKS_RPC_URL=http://127.0.0.1:9949
 ```
 
 ⚠️ **Never commit `.env`** – it contains your private key.
@@ -49,17 +47,15 @@ Running the Hardhat tests ensures the core registry logic still passes.
 
 ## 5. Deploy Core Contracts
 
-Deploy to Moonbeam (or your Chopsticks fork) using the preconfigured script:
+Deploy to Moonbeam using the preconfigured script:
 
 ```bash
 # Moonbeam mainnet (GLMR, real funds)
 npm run deploy:mainnet
-# Chopsticks fork (set HARDHAT_NETWORK=chopsticks with proper RPC)
-npx hardhat run scripts/deploy/deploy-core.ts --network chopsticks
 ```
 
 `npm run deploy:mainnet` runs the full `deploy-all` workflow (core + ShariaSwap + ShariaDCA).  
-`deploy-core` (shown for Chopsticks) just deploys `ShariaCompliance` and `RemoteSwapInitiator`.
+`deploy-core` deploys `ShariaCompliance` and `RemoteSwapInitiator`.
 
 All contract addresses and metadata are written back to `config/deployedContracts.json` for frontend consumption.
 
@@ -91,4 +87,4 @@ Verification currently covers the deployed Tayeb contracts and any tokens listed
 - **`TokenNotRegistered`** → add the asset to `halaCoins.json`, sync, then re-try.
 - **Router pathing** → use router SDK helpers (StellaSwap, Uniswap, etc.) to compute optimal paths, then pass the address array directly.
 
-For advanced workflows (Moonbeam mainnet, Chopsticks forks, XCM), see the docs in `docs/` and `MAINNET_DEPLOYMENT_CHECKLIST.md`.*** End Patch***
+For advanced workflows (Moonbeam mainnet and XCM), see the docs in `docs/` and `MAINNET_DEPLOYMENT_CHECKLIST.md`.

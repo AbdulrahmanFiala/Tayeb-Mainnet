@@ -37,51 +37,12 @@
     "retryDelayMs": 5000,
     "xcmVersion": 3
   },
-  "chopsticks": {
-    "moonbeam": {
-      "name": "Moonbeam Fork",
-      "parachainId": 2004,
-      "chainId": 1281,
-      "rpcUrl": "http://127.0.0.1:9949",
-      "wsUrl": "ws://127.0.0.1:9949",
-      "xcmTransactorPrecompile": "0x0000000000000000000000000000000000000806",
-      "relayChain": "polkadot-fork",
-      "note": "Update forkBlockNumber in config/chopsticks/moonbeam.yaml after mainnet deployment"
-    },
-    "hydration": {
-      "name": "Hydration Fork",
-      "parachainId": 2034,
-      "rpcUrl": "ws://127.0.0.1:9950",
-      "omnipoolPalletIndex": 75,
-      "sellCallIndex": 0,
-      "buyCallIndex": 1,
-      "assetRegistry": {
-        "HDX": 0,
-        "DOT": 5,
-        "USDT": 10,
-        "USDC": 21,
-        "DAI": 18,
-        "WETH": 20,
-        "WBTC": 19,
-        "GLMR": 16
-      },
-      "sovereignAccount": "0x7369626cd1070000000000000000000000000000000000000000000000000000",
-      "minXcmFee": "100000000000000000",
-      "minXcmGas": 1000000000
-    },
-    "relay": {
-      "name": "Polkadot Fork",
-      "rpcUrl": "http://127.0.0.1:9951",
-      "wsUrl": "ws://127.0.0.1:9951"
-    }
-  },
   "notes": {
     "parachainIds": "Hydration: 2034, Moonbeam: 2004",
     "xcmTransactor": "Moonbeam precompile at 0x0806 for sending XCM messages",
     "assetRegistry": "Asset IDs on Hydration Omnipool for cross-chain swaps",
     "sovereignAccount": "Moonbeam's sovereign account on Hydration (parachain 2004)",
     "fees": "Minimum XCM fee: 0.1 token (in Wei), Weight: 1 billion units",
-    "hrmpChannels": "HRMP channels between Moonbeam (2004) and Hydration (2034) are open on Polkadot mainnet",
-    "chopsticks": "For local testing, deploy to mainnet first, then fork with Chopsticks. See docs/MAINNET_CHOPSTICKS_WORKFLOW.md"
+    "hrmpChannels": "HRMP channels between Moonbeam (2004) and Hydration (2034) are open on Polkadot mainnet"
   }
 }

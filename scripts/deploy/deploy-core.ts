@@ -22,7 +22,7 @@ interface XcmConfig {
 }
 
 /**
- * Deploy core contracts to Moonbeam (or a Chopsticks fork)
+ * Deploy core contracts to Moonbeam
  *
  * This script deploys:
  * 1. ShariaCompliance

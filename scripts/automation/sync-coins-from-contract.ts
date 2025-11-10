@@ -20,7 +20,7 @@ const { ethers } = hre;
  *    - Updates complianceReason from contract
  *    - Preserves addresses and other metadata
  * 
- * Usage: npx hardhat run scripts/deploy/sync-coins-from-contract.ts --network moonbeam
+ * Usage: npx hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam
  */
 async function main() {
   const config = halaCoinsConfig as HalaCoinsConfig;

@@ -1,4 +1,0 @@
-endpoint: wss://rpc.polkadot.io
-block: 17850000
-port: 9945
-db: ./.chopsticks-cache/polkadot.db

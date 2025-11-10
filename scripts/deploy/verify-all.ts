@@ -5,7 +5,7 @@ import xcmConfig from "../../config/xcmConfig.json";
 import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
 
 /**
- * Verify deployed contracts on Moonbeam / Chopsticks fork
+ * Verify deployed contracts on Moonbeam mainnet
  *
  * This script verifies:
  * 1. All configured ERC20 tokens (optional mocks)

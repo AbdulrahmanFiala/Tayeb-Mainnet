@@ -1,6 +1,6 @@
 # Tayeb - Sharia Compliant DeFi Platform
 
-A comprehensive decentralized platform for Sharia-compliant cryptocurrency investment, built for Moonbeam mainnet and compatible with Chopsticks forks for local testing.
+A comprehensive decentralized platform for Sharia-compliant cryptocurrency investment built for Moonbeam mainnet.
 
 ## 🌟 Features
 
@@ -134,7 +134,7 @@ Cross-chain swap execution via Polkadot XCM to Hydration parachain.
 
 - Node.js 18+ and npm/yarn
 - MetaMask or compatible Web3 wallet
-- GLMR on Moonbeam **or** a funded Chopsticks fork for testing
+- GLMR on Moonbeam
 
 ### Quick Setup
 
@@ -154,12 +154,11 @@ npm test
 npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaSwap + RemoteSwapInitiator + ShariaDCA
 ```
 
-### Target Networks
+### Target Network
 
 - **Moonbeam Mainnet**: Primary deployment surface (GLMR, production liquidity).
-- **Chopsticks Forks**: Recommended for local testing by forking live Moonbeam + Hydration state.
 
-Use [SETUP.md](./SETUP.md) to configure either environment.
+Use [SETUP.md](./SETUP.md) to configure your environment.
 
 ## 🔧 Debugging Tools
 
@@ -187,7 +186,7 @@ For detailed usage, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#debugging-failed
 
 1. **Confirm Router Configuration**:
    - `config/deployedContracts.json` → `amm.router`, `amm.weth`
-   - Update if you switch DEXes or forked environments
+   - Update if you switch DEXes or use alternate liquidity sources
 
 2. **Access Deployed Addresses**:
    - Token addresses: `config/halaCoins.json`
@@ -264,13 +263,6 @@ Topics covered:
 - **Wrapped GLMR (WETH)**: `0xAcc15dC74880C9944775448304B263D191c6077F`
 - **XCM Transactor Precompile**: `0x0000000000000000000000000000000000000806`
 
-### Chopsticks Fork (example)
-
-- **RPC URL**: http://127.0.0.1:9949 (configurable)
-- **Chain ID**: mirrors the forked chain
-- **Usage**: Point Hardhat at the fork RPC (set `HARDHAT_NETWORK=chopsticks`) to test with real mainnet state without spending GLMR.
-
-
 ## 📚 Resources
 
 - **Usage Examples**: See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md) for detailed code examples and integration guides
@@ -306,8 +298,6 @@ This platform provides tools for Sharia-compliant cryptocurrency investment. How
 - **Do Your Own Research**: Always verify token compliance with qualified Islamic scholars
 - **No Financial Advice**: This is not financial or religious advice
 - **Smart Contract Risk**: Use at your own risk; audit contracts before mainnet use
-- **Test First**: Always test on a Chopsticks fork before touching mainnet
-
 ## 📧 Contact
 
 For questions, issues, or contributions:

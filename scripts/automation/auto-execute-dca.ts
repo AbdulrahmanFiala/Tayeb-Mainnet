@@ -18,7 +18,7 @@ async function main() {
 
   console.log("🤖 DCA Auto-Executor Started");
   console.log("Contract:", shariaDCAAddress);
-  console.log("Network: Moonbeam / Chopsticks");
+  console.log("Network: Moonbeam");
   console.log("Mode: Local Automation Script");
 
   const checkInterval = 60000; // Check every 60 seconds

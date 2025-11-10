@@ -28,8 +28,7 @@ All addresses are written to `config/deployedContracts.json`. Tokens are registe
 ## One-Step Deploy
 
 ```bash
-npm run deploy:moonbeam            # moonbeam (mainnet or Chopsticks fork)
-npm run deploy:mainnet             # moonbeam (⚠️ real GLMR)
+npm run deploy:mainnet             # Moonbeam mainnet (⚠️ real GLMR)
 ```
 
 `scripts/deploy/deploy-all.ts` runs the core deployment, then deploys ShariaSwap and ShariaDCA inline.
@@ -52,11 +51,6 @@ Re-running the script is safe; it will reuse existing deployments when addresses
 npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 ```
 `deploy-all` re-runs `deploy-core`, then deploys `ShariaSwap` and `ShariaDCA`. It is idempotent; reruns reuse existing deployments.
-
-Need to redeploy RemoteSwapInitiator only? Use:
-```bash
-npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
-```
 
 ### 3. Update Token Registry (Optional)
 Add new assets to `halaCoins.json` and run:
@@ -82,8 +76,8 @@ Re-running skips already-verified contracts.
 
 - [ ] Fund `ShariaSwap` with necessary token approvals (if executing on behalf of a multisig)
 - [ ] Create example DCA orders and ensure `path` arrays are valid
-- [ ] Test swap execution on a fork (Chopsticks) before mainnet usage
+- [ ] Run a low-value swap on mainnet to confirm router + paths
 - [ ] Configure automation scripts (`automation/auto-execute-dca.ts`, `automation/execute-ready-orders.ts`)
-- [ ] Setup Chopsticks or mainnet monitors for XCM swaps if using the bridge
+- [ ] Configure mainnet monitors for XCM swaps if using the bridge
 
-For Chopsticks and XCM specifics, refer to the docs in `docs/`. For day-to-day integration examples, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md).*** End Patch***
+For XCM specifics, refer to the docs in `docs/`. For day-to-day integration examples, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md).

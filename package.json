@@ -8,9 +8,8 @@
     "test": "hardhat test",
     "deploy:mainnet": "hardhat run scripts/deploy/deploy-all.ts --network moonbeam",
     "deploy:core": "hardhat run scripts/deploy/deploy-core.ts --network moonbeam",
-    "deploy:xcm": "hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam",
     "verify:all": "hardhat run scripts/deploy/verify-all.ts --network moonbeam",
-    "sync:coins": "hardhat run scripts/deploy/sync-coins-from-contract.ts --network moonbeam",
+    "sync:coins": "hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam",
     "listen:events": "hardhat run scripts/automation/listen-coin-events.ts --network moonbeam"
   },
   "keywords": [

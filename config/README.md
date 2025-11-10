@@ -35,7 +35,7 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 - Runs `deploy/deploy-core.ts`, then deploys ShariaSwap and ShariaDCA inline
 - Useful for mainnet or orchestrated deployments (deploys/updates everything in one go)
 
-### `deploy/sync-coins-from-contract.ts`
+### `automation/sync-coins-from-contract.ts`
 - Reads all coins from ShariaCompliance contract
 - Updates `halaCoins.json`: Syncs coin data, sets `permissible` flags
 - Updates `deployedContracts.json`: Syncs token addresses

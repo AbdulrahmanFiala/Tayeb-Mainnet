@@ -127,14 +127,6 @@ npx hardhat verify --network moonbeam 0x_____________ \
 }
 ```
 
-**Update `config/chopsticks/moonbeam.yaml`**:
-```yaml
-endpoint: wss://wss.api.moonbeam.network
-block: 5750500  # ← Use block AFTER your deployment
-port: 9949
-db: ./.chopsticks-cache/moonbeam.db
-```
-
 ### 2. Test Contract Reads (No Gas Cost)
 
 ```bash
@@ -180,85 +172,13 @@ npx hardhat run scripts/test-mainnet-deployment.ts --network moonbeam
 
 ```bash
 # Add halal coins to ShariaCompliance
-npx hardhat run scripts/deploy/sync-coins-from-contract.ts --network moonbeam
+npx hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam
 ```
 
 **Checklist**:
 - [ ] Halal coins added to ShariaCompliance
 - [ ] Verify on Moonscan: check contract state
 - [ ] Test `isShariaCompliant("BTC")` returns `true`
-
----
-
-## Chopsticks Fork Setup
-
-### 1. Update Fork Configuration
-
-Edit `config/chopsticks/moonbeam.yaml`:
-```yaml
-endpoint: wss://wss.api.moonbeam.network
-block: 5750500  # ← YOUR DEPLOYMENT BLOCK + 10
-port: 9949
-db: ./.chopsticks-cache/moonbeam.db
-```
-
-Edit `config/chopsticks/hydration.yaml`:
-```yaml
-endpoint: wss://rpc.hydradx.cloud
-block: 3100000  # ← Use recent finalized block
-port: 9950
-db: ./.chopsticks-cache/hydration.db
-```
-
-### 2. Start Chopsticks Network
-
-```bash
-# Clear old cache
-rm -rf .chopsticks-cache
-
-# Start network
-npx @acala-network/chopsticks@latest xcm \
-  --relaychain config/chopsticks/relay-polkadot.yaml \
-  --parachain config/chopsticks/moonbeam.yaml \
-  --parachain config/chopsticks/hydration.yaml \
-  > logs/chopsticks.log 2>&1 &
-
-# Wait for startup
-sleep 30
-
-# Check logs
-tail -f logs/chopsticks.log
-```
-
-**Expected Output**:
-```
-✅ Moonbeam RPC listening on http://[::]:9949
-✅ Hydration RPC listening on http://[::]:9950
-✅ Polkadot RPC listening on http://[::]:9951
-✅ Connected parachains [2004,2034]
-```
-
-### 3. Verify Contracts in Fork
-
-```bash
-npx ts-node scripts/xcm/verify-fork-contract.ts
-```
-
-**Expected Output**:
-```
-✅ Connected to Moonbeam fork
-📍 Contract address: 0xDEF456...
-📝 Contract code length: 12,345 bytes
-✅ Contract EXISTS in the fork!
-```
-
-**Checklist**:
-- [ ] Chopsticks network running
-- [ ] All three chains connected
-- [ ] Contracts visible in fork
-- [ ] Can query contract state
-
----
 
 ## Testing Checklist
 
@@ -274,22 +194,6 @@ npx ts-node scripts/xcm/verify-fork-contract.ts
 - [ ] Transaction confirmed on Moonscan
 - [ ] XCM event emitted
 - [ ] Check Hydration explorer for message arrival
-
-### 2. Chopsticks Full Flow Test (Free)
-
-```bash
-# Run full XCM swap test on fork
-# TODO: Create comprehensive test script
-```
-
-**Checklist**:
-- [ ] Swap initiated on Moonbeam fork
-- [ ] XCM message sent to relay
-- [ ] Message forwarded to Hydration
-- [ ] Omnipool swap executed
-- [ ] Assets returned to Moonbeam
-
----
 
 ## Security Checklist
 
@@ -341,7 +245,6 @@ If deployment fails or issues found:
 ✅ All contracts deployed successfully  
 ✅ Contracts verified on Moonscan  
 ✅ Contract reads work correctly  
-✅ Chopsticks fork includes contracts  
 ✅ Test XCM message sent successfully  
 ✅ Documentation updated  
 
@@ -349,12 +252,11 @@ If deployment fails or issues found:
 
 ## Next Steps After Deployment
 
-1. **Test on Chopsticks fork** - Iterate on XCM flow for free
-2. **Create user interface** - Build frontend for swap initiation
-3. **Monitor XCM messages** - Set up event listeners
-4. **Add more assets** - Expand Sharia compliance list
-5. **Optimize gas costs** - Profile and optimize contract calls
-6. **Security audit** - Consider professional audit before handling large volumes
+1. **Create user interface** - Build frontend for swap initiation
+2. **Monitor XCM messages** - Set up event listeners
+3. **Add more assets** - Expand Sharia compliance list
+4. **Optimize gas costs** - Profile and optimize contract calls
+5. **Security audit** - Consider professional audit before handling large volumes
 
 ---
 

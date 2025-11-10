@@ -1,4 +1,0 @@
-endpoint: wss://rpc.hydradx.cloud
-block: 3100000
-port: 9947
-db: ./.chopsticks-cache/hydration.db

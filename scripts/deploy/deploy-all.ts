@@ -176,8 +176,8 @@ async function main() {
   console.log("\n📝 Contract addresses saved to config/deployedContracts.json");
   console.log("\n💡 Next steps:");
   console.log("1. Verify contracts on Moonscan");
-  console.log("2. Update Chopsticks config with deployment block");
-  console.log("3. Test XCM flow on Chopsticks fork");
+  console.log("2. Record deployment block and update internal runbooks");
+  console.log("3. Execute a small XCM swap on mainnet to validate the flow");
   console.log("\nSee MAINNET_DEPLOYMENT_CHECKLIST.md for details");
 }
 

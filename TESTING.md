@@ -39,14 +39,11 @@ Consider enabling Slither or MythX in CI for additional coverage if required.
    const path = [USDC_ADDRESS, WGLMR_ADDRESS, TARGET_ADDRESS];
    ```
 
-2. **Execute a dry-run on a fork**  
+2. **Decode calldata locally**  
    ```bash
    npx hardhat run scripts/decode-failed-tx.ts --network moonbeam
    ```
    Use the returned calldata to inspect revert reasons if the router path is invalid.
-
-3. **Simulate on a forked network** (optional)  
-   With Chopsticks running, point Hardhat to the fork RPC and execute swaps/DCA functions against cloned state.
 
 ## 4. DCA Automation Loop
 
@@ -64,10 +61,10 @@ Before running, create sample orders (see `USAGE_EXAMPLES.md`) and ensure each i
 
 ## 5. XCM Flow Checks
 
-For cross-chain regression tests:
-1. Deploy the contracts on Moonbeam (or fork using Chopsticks).
+For cross-chain regression tests on mainnet:
+1. Deploy the contracts on Moonbeam.
 2. Use `scripts/xcm/initiate-remote-swap.ts` to trigger a round-trip swap.
-3. Monitor `logs/chopsticks.log` or Subscan to ensure the XCM message sequence succeeds.
+3. Monitor Moonscan / Hydration Subscan to ensure the XCM message sequence succeeds.
 
 ## 6. CI Recommendations
 

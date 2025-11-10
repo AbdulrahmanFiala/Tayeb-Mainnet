@@ -26,15 +26,6 @@ const config: HardhatUserConfig = {
       gasPrice: 1000000000, // 1 Gwei
       timeout: 300000, // 5 minutes
     },
-    // Chopsticks fork / custom RPC (set via .env)
-    chopsticks: {
-      url: process.env.CHOPSTICKS_RPC_URL || "http://127.0.0.1:9949",
-      chainId: process.env.CHOPSTICKS_CHAIN_ID ? Number(process.env.CHOPSTICKS_CHAIN_ID) : 1284,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gas: 5000000,
-      gasPrice: 1000000000,
-      timeout: 300000,
-    },
     // Local Hardhat network
     hardhat: {
       chainId: 1337,
