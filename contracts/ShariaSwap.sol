@@ -7,13 +7,11 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ShariaCompliance.sol";
 import "./interfaces/IDEXRouter.sol";
-import "./testnet/SimpleFactory.sol";
-import "./libraries/SwapPathBuilder.sol";
 
 /**
  * @title ShariaSwap
- * @notice Sharia-compliant token swapping with custom AMM
- * @dev Uses SimpleRouter (Uniswap V2-style) on Moonbase Alpha testnet
+ * @notice Sharia-compliant token swapping using external DEX routing
+ * @dev Users provide explicit swap paths (via a Uniswap V2-compatible router)
  */
 contract ShariaSwap is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -25,13 +23,10 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
     /// @notice Reference to Sharia compliance contract
     ShariaCompliance public immutable shariaCompliance;
 
-    /// @notice DEX router for swaps (SimpleRouter)
+    /// @notice DEX router for swaps (Uniswap V2 compatible)
     IDEXRouter public dexRouter;
 
-    /// @notice Factory for checking pair existence
-    SimpleFactory public immutable factory;
-
-    /// @notice WETH (Wrapped DEV) address on Moonbase Alpha
+    /// @notice WETH (Wrapped GLMR) address on Moonbeam
     address public immutable WETH;
 
     /// @notice Swap history per user
@@ -92,20 +87,17 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
     /**
      * @notice Initialize the ShariaSwap contract
      * @param _shariaCompliance Address of ShariaCompliance contract
-     * @param _dexRouter Address of DEX router (SimpleRouter)
+     * @param _dexRouter Address of Uniswap V2 compatible router
      * @param _weth Address of WETH token (Wrapped DEV)
-     * @param _factory Address of SimpleFactory for pair lookups
      */
     constructor(
         address _shariaCompliance,
         address _dexRouter,
-        address _weth,
-        address _factory
+        address _weth
     ) Ownable(msg.sender) {
         shariaCompliance = ShariaCompliance(_shariaCompliance);
         dexRouter = IDEXRouter(_dexRouter);
         WETH = _weth;
-        factory = SimpleFactory(_factory);
     }
 
     // ============================================================================
@@ -128,21 +120,23 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
 
     /**
      * @notice Execute a Sharia-compliant swap
-     * @param tokenIn Input token address
-     * @param tokenOut Output token address
+     * @param path Swap path (first element = input token, last element = output token)
      * @param amountIn Amount of input tokens
      * @param minAmountOut Minimum output amount (slippage protection)
      * @param deadline Transaction deadline
      * @return amountOut Actual output amount received
      */
     function swapShariaCompliant(
-        address tokenIn,
-        address tokenOut,
+        address[] calldata path,
         uint256 amountIn,
         uint256 minAmountOut,
         uint256 deadline
     ) external nonReentrant returns (uint256 amountOut) {
         if (amountIn == 0) revert InvalidAmount();
+        if (path.length < 2) revert InvalidPath();
+
+        address tokenIn = path[0];
+        address tokenOut = path[path.length - 1];
 
         // Get symbol from ShariaCompliance (instead of assetSymbols mapping)
         string memory tokenOutSymbol = shariaCompliance.getSymbolByAddress(tokenOut);
@@ -155,9 +149,6 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
 
         // Approve router if needed
         IERC20(tokenIn).forceApprove(address(dexRouter), amountIn);
-
-        // Build swap path (auto-routes through USDC if no direct pair)
-        address[] memory path = _buildSwapPath(tokenIn, tokenOut);
 
         // Execute swap
         uint256[] memory amounts;
@@ -204,17 +195,21 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
 
     /**
      * @notice Swap native DEV for Sharia-compliant tokens
-     * @param tokenOut Output token address
+     * @param path Swap path (must start with WETH and end with desired output token)
      * @param minAmountOut Minimum output amount
      * @param deadline Transaction deadline
      * @return amountOut Actual output amount received
      */
     function swapGLMRForToken(
-        address tokenOut,
+        address[] calldata path,
         uint256 minAmountOut,
         uint256 deadline
     ) external payable nonReentrant returns (uint256 amountOut) {
         if (msg.value == 0) revert InvalidAmount();
+        if (path.length < 2) revert InvalidPath();
+        if (path[0] != WETH) revert InvalidPath();
+
+        address tokenOut = path[path.length - 1];
 
         // Get symbol from ShariaCompliance
         string memory tokenOutSymbol = shariaCompliance.getSymbolByAddress(tokenOut);
@@ -228,9 +223,6 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
 
         // Approve router
         IERC20(WETH).forceApprove(address(dexRouter), msg.value);
-
-        // Build swap path (auto-routes through USDC if no direct pair)
-        address[] memory path = _buildSwapPath(WETH, tokenOut);
 
         // Execute swap
         uint256[] memory amounts;
@@ -277,18 +269,15 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
 
     /**
      * @notice Get quote for a swap
-     * @param tokenIn Input token
-     * @param tokenOut Output token
+     * @param path Swap path (first element = input token, last element = output token)
      * @param amountIn Input amount
      * @return amountOut Expected output amount
      */
     function getSwapQuote(
-        address tokenIn,
-        address tokenOut,
+        address[] calldata path,
         uint256 amountIn
     ) external view returns (uint256 amountOut) {
-        // Build swap path (auto-routes through USDC if no direct pair)
-        address[] memory path = _buildSwapPath(tokenIn, tokenOut);
+        if (path.length < 2) revert InvalidPath();
 
         uint256[] memory amounts = dexRouter.getAmountsOut(amountIn, path);
         return amounts[amounts.length - 1];
@@ -315,20 +304,6 @@ contract ShariaSwap is Ownable, ReentrancyGuard {
     // ============================================================================
     // INTERNAL FUNCTIONS
     // ============================================================================
-
-    /**
-     * @notice Build optimal swap path (direct or through USDC)
-     * @param tokenIn Input token address
-     * @param tokenOut Output token address
-     * @return path Array of token addresses for the swap
-     */
-    function _buildSwapPath(address tokenIn, address tokenOut) internal view returns (address[] memory path) {
-        // Get USDC address from ShariaCompliance
-        address usdc = shariaCompliance.getTokenAddress("USDC");
-        
-        // Use library to build path
-        return SwapPathBuilder.buildSwapPath(address(factory), tokenIn, tokenOut, usdc);
-    }
 
     /**
      * @notice Record swap in history

@@ -1,21 +1,23 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import halaCoinsConfig from "../config/halaCoins.json";
-import deployedContractsConfig from "../config/deployedContracts.json";
-import { HalaCoinsConfig, DeployedContracts } from "../config/types";
-import { deployOrVerifyContract } from "./utils/deployHelpers";
+import halaCoinsConfig from "../../config/halaCoins.json";
+import deployedContractsConfig from "../../config/deployedContracts.json";
+import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
+import { deployOrVerifyContract } from "../utils/deployHelpers";
+
+const { ethers } = hre;
 
 /**
- * Deploy Main Contracts to Moonbase Alpha Testnet
+ * Deploy main contracts to Moonbeam (or Chopsticks fork)
  * 
  * This script deploys:
  * 1. ShariaCompliance
  * 2. ShariaSwap
  * 3. ShariaDCA
  * 
- * Reads AMM addresses and token config from JSON files
+ * Reads DEX configuration and token config from JSON files
  */
 async function main() {
   // Load environment variables and config
@@ -24,27 +26,27 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  console.log("🚀 Deploying Main Contracts to Moonbase Alpha Testnet...\n");
+  console.log("🚀 Deploying Sharia core contracts...\n");
   console.log("Account:", deployer.address);
-  console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "DEV\n");
+  console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "GLMR\n");
 
   // ============================================================================
-  // Read AMM addresses from deployedContracts.json
+  // Read DEX configuration from deployedContracts.json
   // ============================================================================
   const contractsConfig = deployedContractsConfig as DeployedContracts;
-  const WETH_ADDRESS = contractsConfig.amm.weth || ethers.getAddress("0xD909178CC99d318e4D46e7E66a972955859670E1".toLowerCase());
+  const WETH_ADDRESS =
+    contractsConfig.amm.weth ||
+    ethers.getAddress("0xAcc15dC74880C9944775448304B263D191c6077F");
   const DEX_ROUTER = contractsConfig.amm.router;
-  const FACTORY_ADDRESS = contractsConfig.amm.factory;
 
-  if (!DEX_ROUTER || !FACTORY_ADDRESS) {
-    console.error("❌ Error: AMM addresses not found in deployedContracts.json!");
-    console.log("\n📝 Please run deploy-amm-core.ts first:");
-    console.log("   npx hardhat run scripts/deploy-amm-core.ts --network moonbase\n");
+  if (!DEX_ROUTER) {
+    console.error("❌ Error: DEX router address not found in deployedContracts.json!");
+    console.log("\n📝 Please update config/deployedContracts.json with your preferred router address.");
+    console.log('   Example: "amm": { "router": "0x...", "weth": "0xAcc1..." }\n');
     process.exit(1);
   }
 
-  console.log("📖 Using AMM addresses from deployedContracts.json:");
-  console.log("   Factory:", FACTORY_ADDRESS);
+  console.log("📖 Using DEX configuration from deployedContracts.json:");
   console.log("   Router:", DEX_ROUTER);
   console.log("   WETH:", WETH_ADDRESS);
   console.log();
@@ -73,12 +75,7 @@ async function main() {
     contractsConfig.main.shariaSwap,
     async () => {
       const ShariaSwap = await ethers.getContractFactory("ShariaSwap");
-      return await ShariaSwap.deploy(
-        shariaComplianceAddress,
-        DEX_ROUTER,
-        WETH_ADDRESS,
-        FACTORY_ADDRESS
-      );
+      return await ShariaSwap.deploy(shariaComplianceAddress, DEX_ROUTER, WETH_ADDRESS);
     }
   );
   const shariaSwap = await ethers.getContractAt("ShariaSwap", shariaSwapAddress);
@@ -93,12 +90,7 @@ async function main() {
     contractsConfig.main.shariaDCA,
     async () => {
       const ShariaDCA = await ethers.getContractFactory("ShariaDCA");
-      return await ShariaDCA.deploy(
-        shariaComplianceAddress,
-        DEX_ROUTER,
-        FACTORY_ADDRESS,
-        WETH_ADDRESS
-      );
+      return await ShariaDCA.deploy(shariaComplianceAddress, DEX_ROUTER, WETH_ADDRESS);
     }
   );
   const shariaDCA = await ethers.getContractAt("ShariaDCA", shariaDCAAddress);
@@ -108,13 +100,13 @@ async function main() {
   // Update deployedContracts.json with main contract addresses
   // ============================================================================
   console.log("📝 Updating deployedContracts.json with main contract addresses...");
-  const contractsPath = path.join(__dirname, "..", "config", "deployedContracts.json");
+  const contractsPath = path.join(__dirname, "..", "..", "config", "deployedContracts.json");
 
   const updatedContracts = {
     ...contractsConfig,
-    network: "moonbase",
+    network: "moonbeam",
     lastDeployed: new Date().toISOString(),
-    amm: contractsConfig.amm, // Preserve AMM addresses if already deployed
+    amm: contractsConfig.amm, // Preserve DEX configuration if already set
     main: {
       shariaCompliance: shariaComplianceAddress,
       shariaSwap: shariaSwapAddress,
@@ -154,10 +146,10 @@ async function main() {
   
   for (const coin of config.coins) {
     // Update coin registration to include address
-    const tokenAddress = coin.addresses.moonbase;
-    
+    const tokenAddress = coin.addresses.moonbeam;
+
     if (!tokenAddress) {
-        console.warn(`⚠️  Warning: ${coin.symbol} address not found, registering without address...`);
+        console.warn(`⚠️  Warning: ${coin.symbol} moonbeam address not set, registering without address...`);
     }
     
     // Skip if already registered
@@ -168,11 +160,12 @@ async function main() {
     }
     
     try {
+        const tokenAddressToUse = tokenAddress ?? ethers.ZeroAddress;
         const tx = await shariaCompliance.registerShariaCoin(
             coin.symbol,
             coin.name,
             coin.symbol,
-            tokenAddress,
+            tokenAddressToUse,
             coin.complianceReason
         );
         await tx.wait();
@@ -210,16 +203,16 @@ async function main() {
   console.log("=".repeat(60));
   console.log();
   console.log("🔧 Next Steps:");
-  console.log("1. Add liquidity: npx hardhat run scripts/addLiquidity.ts --network moonbase");
-  console.log("2. Test swaps through ShariaSwap");
-  console.log("3. Register more Sharia-compliant tokens via registerShariaCoin()");
-  console.log("4. Run automation script: npx hardhat run scripts/auto-execute-dca.ts --network moonbase");
+  console.log("1. Confirm your chosen router has liquidity for the intended trading pairs.");
+  console.log("2. Test swaps through ShariaSwap using explicit paths.");
+  console.log("3. Register more Sharia-compliant tokens via registerShariaCoin() or npm run sync:coins.");
+  console.log("4. Run automation script: npx hardhat run scripts/automation/auto-execute-dca.ts --network moonbeam");
   console.log();
   console.log("🔍 Verify contracts on Moonscan (optional) - requires ETHERSCAN_API_KEY");
   console.log("Get API key from: https://moonscan.io/myapikey");
-  console.log(`npx hardhat verify --network moonbase ${shariaComplianceAddress}`);
-  console.log(`npx hardhat verify --network moonbase ${shariaSwapAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS} ${FACTORY_ADDRESS}`);
-  console.log(`npx hardhat verify --network moonbase ${shariaDCAAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${FACTORY_ADDRESS} ${WETH_ADDRESS}`);
+  console.log(`npx hardhat verify --network moonbeam ${shariaComplianceAddress}`);
+  console.log(`npx hardhat verify --network moonbeam ${shariaSwapAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS}`);
+  console.log(`npx hardhat verify --network moonbeam ${shariaDCAAddress} ${shariaComplianceAddress} ${DEX_ROUTER} ${WETH_ADDRESS}`);
 }
 
 main()

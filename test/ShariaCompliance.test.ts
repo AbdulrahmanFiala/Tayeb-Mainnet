@@ -1,7 +1,10 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
+import "@nomicfoundation/hardhat-chai-matchers";
 import { ShariaCompliance } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+
+const { ethers } = hre;
 
 describe("ShariaCompliance", function () {
   let shariaCompliance: ShariaCompliance;
@@ -43,6 +46,7 @@ describe("ShariaCompliance", function () {
           "ADA",
           "Cardano",
           "ADA",
+          ethers.ZeroAddress,
           "Proof-of-stake blockchain"
         )
       )
@@ -56,22 +60,22 @@ describe("ShariaCompliance", function () {
       await expect(
         shariaCompliance
           .connect(user)
-          .registerShariaCoin("ADA", "Cardano", "ADA", "Test")
+          .registerShariaCoin("ADA", "Cardano", "ADA", ethers.ZeroAddress, "Test")
       ).to.be.revertedWithCustomError(shariaCompliance, "OwnableUnauthorizedAccount");
     });
 
     it("Should not allow duplicate coin registration", async function () {
-      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", "Test");
+      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", ethers.ZeroAddress, "Test");
       
       await expect(
-        shariaCompliance.registerShariaCoin("ADA", "Cardano2", "ADA", "Test")
+        shariaCompliance.registerShariaCoin("ADA", "Cardano2", "ADA", ethers.ZeroAddress, "Test")
       ).to.be.revertedWithCustomError(shariaCompliance, "CoinAlreadyExists");
     });
   });
 
   describe("Remove Coin", function () {
     it("Should allow owner to remove coin", async function () {
-      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", "Test");
+      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", ethers.ZeroAddress, "Test");
       
       await expect(shariaCompliance.removeShariaCoin("ADA"))
         .to.emit(shariaCompliance, "CoinRemoved")
@@ -89,7 +93,7 @@ describe("ShariaCompliance", function () {
 
   describe("Update Compliance Status", function () {
     it("Should allow owner to update compliance status", async function () {
-      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", "Test");
+      await shariaCompliance.registerShariaCoin("ADA", "Cardano", "ADA", ethers.ZeroAddress, "Test");
       
       await expect(
         shariaCompliance.updateComplianceStatus("ADA", false, "Under review")
@@ -108,6 +112,7 @@ describe("ShariaCompliance", function () {
         "BTC",
         "Bitcoin",
         "BTC",
+        ethers.ZeroAddress,
         "Decentralized cryptocurrency"
       );
       
@@ -130,10 +135,10 @@ describe("ShariaCompliance", function () {
   describe("Get All Coins", function () {
     it("Should return all registered coins", async function () {
       // Register coins first
-      await shariaCompliance.registerShariaCoin("BTC", "Bitcoin", "BTC", "Test");
-      await shariaCompliance.registerShariaCoin("ETH", "Ethereum", "ETH", "Test");
-      await shariaCompliance.registerShariaCoin("USDT", "Tether", "USDT", "Test");
-      await shariaCompliance.registerShariaCoin("USDC", "USD Coin", "USDC", "Test");
+      await shariaCompliance.registerShariaCoin("BTC", "Bitcoin", "BTC", ethers.ZeroAddress, "Test");
+      await shariaCompliance.registerShariaCoin("ETH", "Ethereum", "ETH", ethers.ZeroAddress, "Test");
+      await shariaCompliance.registerShariaCoin("USDT", "Tether", "USDT", ethers.ZeroAddress, "Test");
+      await shariaCompliance.registerShariaCoin("USDC", "USD Coin", "USDC", ethers.ZeroAddress, "Test");
       
       const coins = await shariaCompliance.getAllShariaCoins();
       
@@ -148,7 +153,7 @@ describe("ShariaCompliance", function () {
   describe("Require Sharia Compliant", function () {
     it("Should not revert for compliant coin", async function () {
       // Register BTC first
-      await shariaCompliance.registerShariaCoin("BTC", "Bitcoin", "BTC", "Test");
+      await shariaCompliance.registerShariaCoin("BTC", "Bitcoin", "BTC", ethers.ZeroAddress, "Test");
       
       await expect(
         shariaCompliance.requireShariaCompliant("BTC")

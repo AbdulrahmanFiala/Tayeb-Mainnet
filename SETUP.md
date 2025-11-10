@@ -1,121 +1,103 @@
-# Tayeb Setup Guide - Moonbase Alpha Testnet
+# Tayeb Setup Guide – Moonbeam & Chopsticks Forks
 
-## 🚀 Get Started in 5 Minutes
+This guide targets Moonbeam mainnet deployments and Chopsticks forks (forked Moonbeam/Hydration) used for local testing. Legacy testnet flows are no longer supported.
 
-Deploy the Sharia-compliant DeFi platform on Moonbase Alpha testnet with custom AMM.
-
-### 1. Install Dependencies
+## 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment
+## 2. Configure Environment
 
 ```bash
-# Copy the example environment file
 cp .env.example .env
 ```
 
-Then edit `.env` and add your private key:
+Populate the following variables:
 
-```bash
-# Open in your editor
-nano .env
-# or
-code .env
+```
+PRIVATE_KEY=0xYourPrivateKey
+MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
+# Optional: custom RPC for a Chopsticks fork (e.g. http://127.0.0.1:9949)
+CHOPSTICKS_RPC_URL=http://127.0.0.1:9949
 ```
 
-**How to get your private key from MetaMask:**
-1. Open MetaMask
-2. Click the three dots menu
-3. Select "Account details"
-4. Click "Export Private Key"
-5. Enter your password
-6. Copy the private key (starts with `0x`)
+⚠️ **Never commit `.env`** – it contains your private key.
 
-⚠️ **IMPORTANT**: Never commit your `.env` file or share your private key!
+## 3. Pick a Router + WETH
 
-### 3. Get Testnet Tokens
+ShariaSwap and ShariaDCA act as adapters for any Uniswap V2-compatible router. Update `config/deployedContracts.json` with the router and WETH addresses you intend to use.
 
-Visit the Moonbase Alpha faucet to get free DEV tokens:
-- **Faucet**: https://faucet.moonbeam.network/
-- You'll need DEV tokens for deployment and testing
+Example (Moonbeam mainnet / StellaSwap):
 
-### 4. Compile Contracts
+```json
+"amm": {
+  "router": "0xb473d688B45ac4655c136c90c7d8934FBCb45D49",
+  "weth": "0xD909178CC99d318e4D46e7E66a972955859670E1"
+}
+```
+
+## 4. Compile & Test
 
 ```bash
 npm run compile
-```
-
-You should see:
-```
-✅ Compiled x Solidity files successfully
-```
-
-### 5. Run Tests
-
-```bash
 npm test
 ```
 
-You should see:
-```
-✅ x passing
-```
+Running the Hardhat tests ensures the core registry logic still passes.
 
-### 6. Deploy to Testnet
+## 5. Deploy Core Contracts
 
-```bash
-npm run deploy:testnet
-```
-
-This will deploy to Moonbase Alpha:
-
-**Core Contracts:**
-- ShariaCompliance
-- ShariaSwap
-- ShariaDCA
-
-**Custom AMM (Automatic):**
-- SimpleFactory (creates pairs)
-- SimpleRouter (routes swaps)
-- SimplePair contracts (liquidity pools)
-- MockERC20 tokens for all 16 Initial Hala Coins (BTC, ETH, USDT, USDC, etc.)
-
-The deployment script automatically:
-1. Deploys the custom AMM infrastructure
-2. Deploys all Initial Hala Coin tokens
-3. Creates token pairs
-4. Mints mock tokens to deployer
-5. Registers all coins from `config/halaCoins.json` in ShariaCompliance
-6. **Saves all addresses to JSON config files** (frontend-ready)
-
-
-### 7. Add Liquidity (Required)
-
-After deployment, add liquidity to enable swaps:
+Deploy to Moonbeam (or your Chopsticks fork) using the preconfigured script:
 
 ```bash
-npx hardhat run scripts/addLiquidity.ts --network moonbase
+# Moonbeam mainnet (GLMR, real funds)
+npm run deploy:mainnet
+
+# Chopsticks fork (set HARDHAT_NETWORK=chopsticks with proper RPC)
+npx hardhat run scripts/deploy/deploy-core.ts --network chopsticks
 ```
 
-This will:
-- Read addresses from JSON configs automatically (no manual editing!)
-- Add liquidity to all pairs (each non-stablecoin with USDC, plus USDC/USDT pair)
-- Enable token swaps across all pairs
+This deploys:
+- `ShariaCompliance`
+- `ShariaSwap` (configured with your router + WETH)
+- `ShariaDCA`
 
-## 📋 Post-Deployment
-
-## 🔍 Verify Contracts (Optional)
-
-Verify all contracts on Moonscan:
+To include the XCM bridge (`RemoteSwapInitiator`), run:
 
 ```bash
-# Make sure ETHERSCAN_API_KEY is set in your .env file
-npm run verify:all
+npm run deploy:xcm -- --network moonbeam   # or chopsticks
 ```
 
-> **Note**: Get your API key from [etherscan.io/mapidashboard](https://etherscan.io/apidashboard) and add it to `.env` as `ETHERSCAN_API_KEY`.
+All contract addresses and metadata are written back to `config/deployedContracts.json` for frontend consumption.
 
-For detailed verification information and troubleshooting, see [DEPLOYMENT_WORKFLOW.md](./DEPLOYMENT_WORKFLOW.md#verification).
+## 6. Register Tokens
+
+`scripts/deploy/deploy-core.ts` syncs `config/halaCoins.json` with the on-chain registry. To register additional assets later:
+
+1. Add the symbol + metadata to `halaCoins.json`
+2. Run `npm run sync:coins`
+
+## 7. Provide Swap Paths
+
+With the AMM removed, **routes are now provided by the caller**:
+- For swaps, compute an address array (e.g. `[USDC, WGLMR, TARGET]`) via your favourite off-chain router SDK.
+- For DCA orders, pass the same path when creating the order; the contract stores it for subsequent executions.
+
+## 8. (Optional) Contract Verification
+
+```bash
+# Requires ETHERSCAN_API_KEY in .env (Etherscan V2 key for Moonbeam)
+npm run verify:all -- --network moonbeam
+```
+
+Verification currently covers the deployed Tayeb contracts and any tokens listed in `config/deployedContracts.json`.
+
+## 9. Troubleshooting
+
+- **`InvalidPath` errors** → ensure the first hop matches the source asset (`WETH` for DEV orders) and the last hop matches the destination token.
+- **`TokenNotRegistered`** → add the asset to `halaCoins.json`, sync, then re-try.
+- **Router pathing** → use router SDK helpers (StellaSwap, Uniswap, etc.) to compute optimal paths, then pass the address array directly.
+
+For advanced workflows (Moonbeam mainnet, Chopsticks forks, XCM), see the docs in `docs/` and `MAINNET_DEPLOYMENT_CHECKLIST.md`.*** End Patch***

@@ -27,9 +27,9 @@ const shariaSwap = new ethers.Contract(
 );
 
 // Get token addresses
-const btcAddress = halaCoins.coins.find(c => c.symbol === "BTC")?.addresses.moonbase;
-const ethAddress = halaCoins.coins.find(c => c.symbol === "ETH")?.addresses.moonbase;
-const usdtAddress = halaCoins.coins.find(c => c.symbol === "USDT")?.addresses.moonbase;
+const btcAddress = halaCoins.coins.find(c => c.symbol === "BTC")?.addresses.moonbeam;
+const ethAddress = halaCoins.coins.find(c => c.symbol === "ETH")?.addresses.moonbeam;
+const usdtAddress = halaCoins.coins.find(c => c.symbol === "USDT")?.addresses.moonbeam;
 ```
 
 ### React/Next.js Example
@@ -115,9 +115,9 @@ npm run listen:events
 **Method 2: Via JSON First**
 1. Add coin to `halaCoins.json`
 2. Deploy token: `npm run deploy:tokens` (deploys new token)
-3. Create pairs: `npm run deploy:pairs` (creates pairs for new token)
+3. Ensure liquidity exists on your chosen router before enabling swaps for the token
 4. Run `npm run deploy:core` (registers new coin in ShariaCompliance)
-5. Add liquidity: `npx hardhat run scripts/addLiquidity.ts --network moonbase` (if needed)
+5. Confirm router/liquidity: point at an existing Uniswap V2 router with sufficient liquidity for your path
 
 ### Code Example: Register Coin from Frontend
 
@@ -148,7 +148,7 @@ console.log("Coin registered!");
 
 ## Executing Swaps
 
-> **💡 Automatic Routing**: ShariaSwap automatically routes swaps through USDC when a direct pair doesn't exist. For example, swapping ETH → BTC will automatically use the ETH/USDC and BTC/USDC pairs (ETH → USDC → BTC). You don't need to specify the path - the contract handles it automatically!
+> **💡 Routing Control**: You now provide the exact path. If ETH → BTC liquidity is best through USDC, pass `[ETH, USDC, BTC]`. This keeps routing transparent and lets you integrate any off-chain pathfinder.
 
 ### Swap DEV for Token
 
@@ -165,7 +165,7 @@ const shariaSwap = new ethers.Contract(
 );
 
 const usdtCoin = halaCoins.coins.find(c => c.symbol === "USDT");
-const USDT_ADDRESS = usdtCoin?.addresses.moonbase;
+const USDT_ADDRESS = usdtCoin?.addresses.moonbeam;
 
 const amountIn = ethers.parseEther("1.0"); // 1 DEV
 const minAmountOut = ethers.parseUnits("5", 6); // Minimum 5 USDT (6 decimals)
@@ -196,28 +196,33 @@ const shariaSwap = new ethers.Contract(
   signer
 );
 
+const WETH_ADDRESS = deployedContracts.amm.weth!;
+
 const btcCoin = halaCoins.coins.find(c => c.symbol === "BTC");
 const ethCoin = halaCoins.coins.find(c => c.symbol === "ETH");
 
-const BTC_ADDRESS = btcCoin?.addresses.moonbase;
-const ETH_ADDRESS = ethCoin?.addresses.moonbase;
+const BTC_ADDRESS = btcCoin?.addresses.moonbeam;
+const ETH_ADDRESS = ethCoin?.addresses.moonbeam;
 
 // Approve first (if needed)
 const btcToken = new ethers.Contract(BTC_ADDRESS, ERC20_ABI, signer);
 await btcToken.approve(shariaSwap.target, ethers.MaxUint256);
 
-// Get quote (automatically uses best path: direct or through USDC)
+// Build an explicit route (e.g. BTC -> USDC -> ETH)
+const usdcCoin = halaCoins.coins.find(c => c.symbol === "USDC");
+const USDC_ADDRESS = usdcCoin?.addresses.moonbeam;
 const amountIn = ethers.parseUnits("0.1", 8); // 0.1 BTC (8 decimals)
-const quote = await shariaSwap.getSwapQuote(BTC_ADDRESS, ETH_ADDRESS, amountIn);
+const path = [BTC_ADDRESS, USDC_ADDRESS, ETH_ADDRESS];
+
+const quote = await shariaSwap.getSwapQuote(path, amountIn);
 console.log(`Expected output: ${ethers.formatEther(quote)} ETH`);
 
-// Execute swap (path is automatically determined)
+// Execute swap
 const minAmountOut = quote * BigInt(95) / BigInt(100); // 5% slippage tolerance
 const deadline = Math.floor(Date.now() / 1000) + 60 * 15;
 
 const tx = await shariaSwap.swapShariaCompliant(
-  BTC_ADDRESS,
-  ETH_ADDRESS,
+  path,
   amountIn,
   minAmountOut,
   deadline
@@ -232,11 +237,8 @@ console.log("Swap completed!", receipt.transactionHash);
 ```typescript
 // Get price estimate before swapping
 const amountIn = ethers.parseEther("1.0"); // 1 DEV
-const quote = await shariaSwap.getSwapQuote(
-  ethers.ZeroAddress, // DEV (native token)
-  USDT_ADDRESS,
-  amountIn
-);
+const path = [WETH_ADDRESS, USDT_ADDRESS];
+const quote = await shariaSwap.getSwapQuote(path, amountIn);
 
 console.log(`1 DEV = ${ethers.formatUnits(quote, 6)} USDT`);
 ```
@@ -271,16 +273,18 @@ const shariaDCA = new ethers.Contract(
   signer
 );
 
-const sourceSymbol = "DEV"; // or "" for native DEV
-const targetSymbol = "USDT";
+const usdtCoin = halaCoins.coins.find(c => c.symbol === "USDT");
+const USDT_ADDRESS = usdtCoin?.addresses.moonbeam!;
+
 const amountPerInterval = ethers.parseEther("1"); // 1 DEV per interval
 const intervalSeconds = 86400; // 1 day (24 hours)
 const totalIntervals = 30; // 30 days total
 const totalDeposit = amountPerInterval * BigInt(totalIntervals); // 30 DEV total
 
-const tx = await shariaDCA.createDCAOrder(
-  sourceSymbol,
-  targetSymbol,
+const path = [WETH_ADDRESS, USDT_ADDRESS];
+const tx = await shariaDCA.createDCAOrderWithDEV(
+  USDT_ADDRESS,
+  path,
   amountPerInterval,
   intervalSeconds,
   totalIntervals,
@@ -302,16 +306,15 @@ console.log(`Order ID: ${orderId}`);
 
 ```typescript
 // Weekly DCA: Invest 5 DEV into BTC every week for 12 weeks
-const sourceSymbol = "DEV";
-const targetSymbol = "BTC";
 const amountPerInterval = ethers.parseEther("5"); // 5 DEV per week
 const intervalSeconds = 604800; // 1 week (7 days)
 const totalIntervals = 12; // 12 weeks
 const totalDeposit = amountPerInterval * BigInt(totalIntervals); // 60 DEV total
 
-const tx = await shariaDCA.createDCAOrder(
-  sourceSymbol,
-  targetSymbol,
+const btcPath = [WETH_ADDRESS, BTC_ADDRESS];
+const tx = await shariaDCA.createDCAOrderWithDEV(
+  BTC_ADDRESS,
+  btcPath,
   amountPerInterval,
   intervalSeconds,
   totalIntervals,
@@ -326,7 +329,7 @@ const tx = await shariaDCA.createDCAOrder(
 import halaCoins from './config/halaCoins.json';
 
 const usdcCoin = halaCoins.coins.find(c => c.symbol === "USDC");
-const USDC_ADDRESS = usdcCoin?.addresses.moonbase;
+const USDC_ADDRESS = usdcCoin?.addresses.moonbeam;
 
 // First, approve ShariaDCA to spend your USDC
 const usdcToken = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
@@ -337,9 +340,11 @@ const totalRequired = amountPerInterval * BigInt(totalIntervals); // 3000 USDC
 await usdcToken.approve(deployedContracts.main.shariaDCA, totalRequired);
 
 // Create DCA order (no ETH value needed for ERC20)
-const tx = await shariaDCA.createDCAOrder(
-  "USDC",           // Source token
-  "BTC",            // Target token
+const usdcToBtcPath = [USDC_ADDRESS!, WETH_ADDRESS, BTC_ADDRESS!];
+const tx = await shariaDCA.createDCAOrderWithToken(
+  USDC_ADDRESS!,
+  BTC_ADDRESS!,
+  usdcToBtcPath,
   amountPerInterval,
   86400,            // Daily
   totalIntervals
@@ -363,19 +368,25 @@ const totalIntervals = 30;
 const ethToken = new ethers.Contract(ETH_ADDRESS, ERC20_ABI, signer);
 await ethToken.approve(shariaDCA.target, amountPerInterval * BigInt(totalIntervals));
 
-const tx = await shariaDCA.createDCAOrder(
-  sourceSymbol,
-  targetSymbol,
+const ethToUsdtPath = [ETH_ADDRESS!, USDC_ADDRESS!, USDT_ADDRESS];
+const tx = await shariaDCA.createDCAOrderWithToken(
+  ETH_ADDRESS!,
+  USDT_ADDRESS,
+  ethToUsdtPath,
   amountPerInterval,
   intervalSeconds,
   totalIntervals
 );
 
 // Example 2: BTC → SOL DCA
-// Automatically routes through USDC if no direct pair exists
-const tx2 = await shariaDCA.createDCAOrder(
-  "BTC",    // Source
-  "SOL",    // Target (will route BTC → USDC → SOL if needed)
+// Explicit path through USDC
+const solCoin = halaCoins.coins.find(c => c.symbol === "SOL");
+const SOL_ADDRESS = solCoin?.addresses.moonbeam!;
+const btcToSolPath = [BTC_ADDRESS!, USDC_ADDRESS!, SOL_ADDRESS];
+const tx2 = await shariaDCA.createDCAOrderWithToken(
+  BTC_ADDRESS!,
+  SOL_ADDRESS,
+  btcToSolPath,
   ethers.parseUnits("0.01", 8), // 0.01 BTC
   604800,   // Weekly
   12        // 12 weeks
@@ -387,16 +398,19 @@ const tx2 = await shariaDCA.createDCAOrder(
 ```typescript
 // Get order information
 const order = await shariaDCA.getDCAOrder(orderId);
+const path = await shariaDCA.getOrderPath(orderId);
 
 console.log(`Order ID: ${orderId}`);
-console.log(`User: ${order.user}`);
-console.log(`Target Symbol: ${order.targetSymbol}`);
-console.log(`Amount Per Interval: ${ethers.formatEther(order.amountPerInterval)} DEV`);
-console.log(`Interval: ${order.intervalSeconds} seconds`);
+console.log(`Owner: ${order.owner}`);
+console.log(`Source Token: ${order.sourceToken}`);
+console.log(`Target Token: ${order.targetToken}`);
+console.log(`Stored Path: ${path.join(" -> ")}`);
+console.log(`Amount Per Interval: ${ethers.formatUnits(order.amountPerInterval, 18)} (check decimals)`);
+console.log(`Interval: ${order.interval} seconds`);
 console.log(`Total Intervals: ${order.totalIntervals}`);
-console.log(`Completed Intervals: ${order.completedIntervals}`);
+console.log(`Completed Intervals: ${order.intervalsCompleted}`);
 console.log(`Next Execution: ${new Date(Number(order.nextExecutionTime) * 1000)}`);
-console.log(`Active: ${order.active}`);
+console.log(`Active: ${order.isActive}`);
 ```
 
 ### Get User's DCA Orders
@@ -450,7 +464,7 @@ For automatic DCA execution, use the local automation script:
 2. Ensure the executor wallet has DEV tokens for gas
 3. Run the automation script:
    ```bash
-   npx hardhat run scripts/auto-execute-dca.ts --network moonbase
+   npx hardhat run scripts/automation/auto-execute-dca.ts --network moonbeam
    ```
 4. The script will check every 60 seconds and execute ready orders automatically
 5. Keep the script running for continuous automation
@@ -500,7 +514,7 @@ if (upkeepNeeded) {
 For cron jobs or scheduled tasks, use the one-time execution script:
 
 ```bash
-npx hardhat run scripts/execute-ready-orders.ts --network moonbase
+npx hardhat run scripts/automation/execute-ready-orders.ts --network moonbeam
 ```
 
 This script executes all ready orders once and exits, perfect for GitHub Actions or cron jobs.
@@ -597,7 +611,7 @@ If a transaction fails, use the decode script to understand what went wrong:
 ```bash
 # Using environment variable
 TX_HASH=0x773aac5810a73346407eccc695b23aa9197653b4d306effe58f2714683509a23 \
-npx hardhat run scripts/decode-failed-tx.ts --network moonbase
+npx hardhat run scripts/decode-failed-tx.ts --network moonbeam
 ```
 
 ## Frontend Integration (React Example)

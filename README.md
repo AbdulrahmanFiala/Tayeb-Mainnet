@@ -1,6 +1,6 @@
 # Tayeb - Sharia Compliant DeFi Platform
 
-A comprehensive decentralized platform for Sharia-compliant cryptocurrency investment, built with Solidity smart contracts for Moonbase Alpha (Moonbeam Testnet).
+A comprehensive decentralized platform for Sharia-compliant cryptocurrency investment, built for Moonbeam mainnet and compatible with Chopsticks forks for local testing.
 
 ## 🌟 Features
 
@@ -10,19 +10,28 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
 - **Transparent Documentation**: Each token includes compliance reasoning
 
 ### 2. Token Swapping (ShariaSwap)
-- **Custom AMM**: Built-in Uniswap V2-style AMM for testing
-- **Automatic Routing**: Automatically routes through USDC when direct pairs don't exist
-- **Compliance Enforcement**: Only allows swaps into Sharia-compliant tokens
+- **Router Integration**: Works with any Uniswap V2-compatible router (e.g. StellaSwap on Moonbeam)
+- **User-Defined Paths**: Callers provide the exact swap path for full control and transparency
+- **Compliance Enforcement**: Only allows swaps into Sharia-compliant assets registered on-chain
 - **Swap History**: Track all user swap activities
-- **Price Quotes**: Get swap estimates before execution
+- **Price Quotes**: Use router quoting for preview before execution
 - **Slippage Protection**: Minimum output amount guarantees
 
 ### 3. Dollar Cost Averaging (ShariaDCA)
 - **Automated DCA**: Schedule periodic investments into Sharia-compliant tokens
+- **Router-Agnostic**: Reuses the same user-provided paths as ShariaSwap
 - **Local Automation**: Automated execution via local script
-- **Flexible Intervals**: Set custom time intervals (any duration for testing)
-- **Prepaid Deposits**: Lock funds for all future DCA executions
+- **Flexible Intervals**: Set custom schedules
+- **Prepaid Deposits**: Lock funds for future executions
 - **Cancel Anytime**: Get refunds for uncompleted intervals
+
+### 4. Cross-Chain Swaps (XCM Integration)
+- **Polkadot XCM**: Native cross-chain messaging for parachain interoperability
+- **Hydration Omnipool**: Execute swaps on Hydration's unified liquidity pool
+- **Automatic Routing**: Seamless asset transfers between Moonbeam and Hydration
+- **Sharia Validation**: All cross-chain swaps validated for compliance
+- **Status Monitoring**: Track XCM message delivery and execution
+- **Round-Trip Swaps**: Lock on Moonbeam → Swap on Hydration → Return to Moonbeam
 
 ## 🏗️ Architecture
 
@@ -34,7 +43,7 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
             │                                    │
 ┌───────────▼──────────┐              ┌──────────▼──────────┐
 │  ShariaCompliance    │              │    ShariaSwap       │
-│  - Token Registry    │◄─────────────┤    - DEX Router     │
+│  - Token Registry    │◄─────────────┤    - Router Proxy   │
 │  - Validation        │              │    - Swap Logic     │
 └──────────────────────┘              └─────────────────────┘
             ▲                                     │
@@ -48,8 +57,8 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
             └─────────────┬───────────────────────┘
                           │
               ┌───────────▼──────────────┐
-              │      Custom AMM          │
-              │  (Uniswap V2 Style)      │
+              │  External DEX Liquidity  │
+              │ (Uniswap V2-compatible)  │
               └──────────────────────────┘
 ```
 
@@ -72,32 +81,50 @@ Core registry managing Sharia-compliant token approvals. **Contract is source of
 Token swapping with DEX integration and compliance validation.
 
 **Key Functions:**
-- `swapShariaCompliant(tokenIn, tokenOut, amountIn, minAmountOut, deadline)` - Execute swap
-- `swapGLMRForToken(tokenOut, minAmountOut, deadline)` - Swap native DEV
-- `getSwapQuote(tokenIn, tokenOut, amountIn)` - Get price estimate
+- `swapShariaCompliant(path, amountIn, minAmountOut, deadline)` - Execute swap with explicit routing path
+- `swapGLMRForToken(path, minAmountOut, deadline)` - Swap native DEV using a WETH-prefixed path
+- `getSwapQuote(path, amountIn)` - Get price estimate for a provided path
 - `getUserSwapHistory(user)` - View swap history
 
 **Features:**
-- **Automatic Routing**: Automatically routes swaps through USDC when a direct pair doesn't exist (e.g., ETH → BTC routes through ETH/USDC → BTC/USDC)
+- **Path Transparency**: Frontends select their preferred pools and pass the path to the contract
+- **Compliance Guardrails**: Contract enforces that the output token is Sharia-approved
 - Token addresses are automatically queried from `ShariaCompliance` contract. No separate registration needed.
 
 ### ShariaDCA.sol
 Automated Dollar Cost Averaging with local automation script.
 
 **Key Functions:**
-- `createDCAOrderWithDEV(targetToken, amountPerInterval, intervalSeconds, totalIntervals)` - Create order with native DEV
-- `createDCAOrderWithToken(sourceToken, targetToken, amountPerInterval, intervalSeconds, totalIntervals)` - Create order with ERC20 tokens
+- `createDCAOrderWithDEV(targetToken, path, amountPerInterval, intervalSeconds, totalIntervals)` - Create order with native DEV
+- `createDCAOrderWithToken(sourceToken, targetToken, path, amountPerInterval, intervalSeconds, totalIntervals)` - Create order with ERC20 tokens
 - `executeDCAOrder(orderId)` - Execute next interval (called by automation script or manually)
 - `cancelDCAOrder(orderId)` - Cancel and get refund
 - `getDCAOrder(orderId)` - Get order details
 - `getUserOrders(user)` - Get user's orders
+- `getOrderPath(orderId)` - Retrieve stored swap path
 - `checkUpkeep()` / `performUpkeep()` - Automation functions for local script
 
 **Features:**
 - **Any Token → Any Token DCA**: Deposit DEV, USDC, BTC, or any Sharia-compliant token and DCA into any other token
-- **Automatic Routing**: Uses the same routing logic as ShariaSwap (direct pairs or through USDC)
+- **Explicit Routing**: Uses the same caller-provided path as ShariaSwap, offering predictable execution routes
 - Token addresses are automatically queried from `ShariaCompliance` contract. No separate registration needed.
-- **Local Automation**: Run `scripts/auto-execute-dca.ts` to automatically execute orders
+- **Local Automation**: Run `scripts/automation/auto-execute-dca.ts` to automatically execute orders
+
+### RemoteSwapInitiator.sol
+Cross-chain swap execution via Polkadot XCM to Hydration parachain.
+
+**Key Functions:**
+- `initiateRemoteSwap(sourceToken, targetToken, amount, minAmountOut, deadline)` - Initiate cross-chain swap
+- `cancelSwap(swapId)` - Cancel pending swap and refund tokens
+- `getSwap(swapId)` - Get swap details and status
+- `getUserSwaps(user)` - Get all swaps for a user
+
+**Features:**
+- **XCM Integration**: Uses Moonbeam's XCM Transactor precompile for cross-chain messaging
+- **Hydration Omnipool**: Executes swaps on Hydration's unified liquidity pool
+- **Status Tracking**: Monitor swap progress (Pending, Initiated, Completed, Failed)
+- **Sharia Compliance**: Validates target token compliance before initiating swap
+- **Round-Trip**: Locks tokens on Moonbeam, swaps on Hydration, returns swapped tokens
 
 ## 🚀 Getting Started
 
@@ -107,7 +134,7 @@ Automated Dollar Cost Averaging with local automation script.
 
 - Node.js 18+ and npm/yarn
 - MetaMask or compatible Web3 wallet
-- DEV tokens on Moonbase Alpha testnet (faucet: https://faucet.moonbeam.network/)
+- GLMR on Moonbeam **or** a funded Chopsticks fork for testing
 
 ### Quick Setup
 
@@ -124,20 +151,15 @@ cp .env.example .env
 # Compile, test, and deploy
 npm run compile
 npm test
-npm run deploy:testnet  # Deploys with custom AMM on testnet
+npm run deploy:mainnet  # Deploys ShariaCompliance + ShariaSwap + ShariaDCA (+ RemoteSwapInitiator)
 ```
 
-### Moonbase Alpha Testnet
+### Target Networks
 
-This platform is designed for **Moonbase Alpha (testnet)** only:
+- **Moonbeam Mainnet**: Primary deployment surface (GLMR, production liquidity).
+- **Chopsticks Forks**: Recommended for local testing by forking live Moonbeam + Hydration state.
 
-- ✅ Custom Uniswap V2-style AMM (SimpleRouter, SimplePair, SimpleFactory)
-- ✅ Mock ERC20 tokens (USDT, USDC, DAI) for testing
-- ✅ Manual liquidity provision via `scripts/addLiquidity.ts`
-- ✅ Free testnet DEV tokens for testing
-- ✅ No real funds required
-
-For detailed setup instructions, troubleshooting, and post-deployment steps, refer to [SETUP.md](./SETUP.md).
+Use [SETUP.md](./SETUP.md) to configure either environment.
 
 ## 🔧 Debugging Tools
 
@@ -146,7 +168,7 @@ For detailed setup instructions, troubleshooting, and post-deployment steps, ref
 Debug failed transactions with the decode script:
 
 ```bash
-TX_HASH=0x... npx hardhat run scripts/decode-failed-tx.ts --network moonbase
+TX_HASH=0x... npx hardhat run scripts/decode-failed-tx.ts --network moonbeam
 ```
 
 The script will:
@@ -163,10 +185,9 @@ For detailed usage, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#debugging-failed
 
 ### Quick Steps
 
-1. **Add Liquidity** (required after deployment):
-   ```bash
-   npx hardhat run scripts/addLiquidity.ts --network moonbase
-   ```
+1. **Confirm Router Configuration**:
+   - `config/deployedContracts.json` → `amm.router`, `amm.weth`
+   - Update if you switch DEXes or forked environments
 
 2. **Access Deployed Addresses**:
    - Token addresses: `config/halaCoins.json`
@@ -178,38 +199,87 @@ For detailed usage, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#debugging-failed
 
 For coin management, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#coin-management-workflow).
 
-## 🌐 Moonbeam Network Details
+## 🌉 Cross-Chain Swaps via XCM
 
-### Moonbase Alpha Testnet
+Tayeb supports cross-chain swaps from Moonbeam to Hydration parachain using Polkadot's XCM protocol.
 
-- **Network Name**: Moonbase Alpha
-- **RPC URL**: https://rpc.api.moonbase.moonbeam.network
-- **Chain ID**: 1287
-- **Currency**: DEV
-- **Block Explorer**: https://moonbase.moonscan.io/
-- **Faucet**: https://faucet.moonbeam.network/
+### Features
+
+- **Native XCM Integration**: Uses Moonbeam's XCM Transactor precompile for secure cross-chain messaging
+- **Hydration Omnipool**: Access deep liquidity on Hydration's unified liquidity pool
+- **Sharia Compliance**: All cross-chain swaps validated for Islamic finance compliance
+- **Round-Trip Execution**: Lock tokens on Moonbeam → Swap on Hydration → Receive back on Moonbeam
+- **Status Monitoring**: Track XCM message delivery and swap execution in real-time
+
+### Quick Start
+
+1. **Deploy RemoteSwapInitiator**:
+   ```bash
+   npx hardhat run scripts/xcm/deploy-remote-swap.ts --network moonbeam
+   ```
+
+2. **Initiate a Cross-Chain Swap**:
+   ```bash
+   npx hardhat run scripts/xcm/initiate-remote-swap.ts --network moonbeam
+   ```
+
+3. **Monitor Swap Status**:
+   - Check on [Moonscan](https://moonscan.io/)
+   - Track XCM messages on [Hydration Subscan](https://hydration.subscan.io/)
+
+### Prerequisites
+
+Before using cross-chain swaps, ensure:
+
+- ✅ HRMP channel exists between Moonbeam and Hydration
+- ✅ Assets are registered as XC-20s on both chains
+- ✅ Moonbeam's sovereign account on Hydration has HDX for fees
+- ✅ RemoteSwapInitiator contract has DEV for XCM fees
+
+### Documentation
+
+For detailed setup, configuration, and troubleshooting, see:
+
+📖 **[XCM Integration Guide](./docs/XCM_INTEGRATION.md)**
+
+Topics covered:
+- Architecture and message flow
+- HRMP channel setup
+- Asset registration (XC-20s)
+- Sovereign account funding
+- Deployment and configuration
+- Monitoring and debugging
+- Fee estimation
+- Security considerations
+- Troubleshooting common issues
+
+## 🌐 Network Details
 
 ### Moonbeam Mainnet
 
-- **Network Name**: Moonbeam
 - **RPC URL**: https://rpc.api.moonbeam.network
 - **Chain ID**: 1284
 - **Currency**: GLMR
 - **Block Explorer**: https://moonscan.io/
-- **API Key**: Get from https://etherscan.io/apidashboard (Etherscan API V2)
+- **Wrapped GLMR (WETH)**: `0xAcc15dC74880C9944775448304B263D191c6077F`
+- **XCM Transactor Precompile**: `0x0000000000000000000000000000000000000806`
 
-### Key Addresses (Moonbase Alpha)
+### Chopsticks Fork (example)
 
-- **WETH (Wrapped DEV)**: `0xD909178CC99d318e4D46e7E66a972955859670E1`
+- **RPC URL**: http://127.0.0.1:9949 (configurable)
+- **Chain ID**: mirrors the forked chain
+- **Usage**: Point Hardhat at the fork RPC (set `HARDHAT_NETWORK=chopsticks`) to test with real mainnet state without spending GLMR.
 
 
 ## 📚 Resources
 
 - **Usage Examples**: See [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md) for detailed code examples and integration guides
 - **Setup Guide**: See [SETUP.md](./SETUP.md) for quick start and troubleshooting
+- **XCM Integration**: See [XCM_INTEGRATION.md](./docs/XCM_INTEGRATION.md) for cross-chain swap setup and troubleshooting
 - **Deployment Workflow**: See [DEPLOYMENT_WORKFLOW.md](./DEPLOYMENT_WORKFLOW.md) for deployment details
 - **Moonbeam Docs**: https://docs.moonbeam.network/
-- **Moonbase Faucet**: https://faucet.moonbeam.network/
+- **Hydration Docs**: https://docs.hydration.net/
+- **Polkadot XCM**: https://wiki.polkadot.network/docs/learn-xcm
 - **Hardhat**: https://hardhat.org/
 
 
@@ -236,7 +306,7 @@ This platform provides tools for Sharia-compliant cryptocurrency investment. How
 - **Do Your Own Research**: Always verify token compliance with qualified Islamic scholars
 - **No Financial Advice**: This is not financial or religious advice
 - **Smart Contract Risk**: Use at your own risk; audit contracts before mainnet use
-- **Testnet First**: Always test on Moonbase Alpha before using mainnet
+- **Test First**: Always test on a Chopsticks fork before touching mainnet
 
 ## 📧 Contact
 

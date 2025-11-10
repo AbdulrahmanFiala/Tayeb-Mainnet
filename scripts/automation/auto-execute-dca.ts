@@ -1,18 +1,24 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import * as dotenv from "dotenv";
-import deployedContracts from "../config/deployedContracts.json";
+import deployedContracts from "../../config/deployedContracts.json";
 
 dotenv.config();
 
+const { ethers } = hre;
+
 async function main() {
-  const shariaDCA = await ethers.getContractAt(
-    "ShariaDCA",
-    deployedContracts.main.shariaDCA
-  );
+  const shariaDCAAddress = deployedContracts.main.shariaDCA;
+  if (!shariaDCAAddress) {
+    throw new Error(
+      "ShariaDCA address not found in config/deployedContracts.json. Deploy the contract first."
+    );
+  }
+
+  const shariaDCA = await ethers.getContractAt("ShariaDCA", shariaDCAAddress);
 
   console.log("🤖 DCA Auto-Executor Started");
-  console.log("Contract:", deployedContracts.main.shariaDCA);
-  console.log("Network: Moonbase Alpha");
+  console.log("Contract:", shariaDCAAddress);
+  console.log("Network: Moonbeam / Chopsticks");
   console.log("Mode: Local Automation Script");
 
   const checkInterval = 60000; // Check every 60 seconds
@@ -106,6 +112,9 @@ async function main() {
             console.log(`   Transaction sent: ${tx.hash}`);
             
             const receipt = await tx.wait();
+            if (!receipt) {
+              throw new Error("Transaction receipt unavailable");
+            }
             console.log(`✅ Order #${orderId} executed successfully! (Interval ${currentInterval}/${orderInfo.totalIntervals})`);
             console.log(`   Block: ${receipt.blockNumber}`);
             console.log(`   Gas used: ${receipt.gasUsed.toString()}\n`);

@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ShariaCompliance.sol";
 import "./interfaces/IDEXRouter.sol";
 import "./interfaces/IWETH.sol";
-import "./libraries/SwapPathBuilder.sol";
-import "./testnet/SimpleFactory.sol";
 
 /**
  * @title ShariaDCA
@@ -28,9 +26,6 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
 
     /// @notice DEX router
     IDEXRouter public dexRouter;
-
-    /// @notice Factory for checking pair existence
-    SimpleFactory public immutable factory;
 
     /// @notice WETH address (Wrapped DEV)
     address public immutable WETH;
@@ -61,6 +56,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
         address owner;
         address sourceToken;      // address(0) for DEV, token address for ERC20
         address targetToken;
+        address[] path;
         uint256 amountPerInterval;
         uint256 interval;
         uint256 intervalsCompleted;
@@ -117,6 +113,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
     error OrderNotReady();
     error SwapFailed();
     error TokenNotRegistered();
+    error InvalidPath();
 
     // ============================================================================
     // CONSTRUCTOR
@@ -125,12 +122,10 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
     constructor(
         address _shariaCompliance,
         address _dexRouter,
-        address _factory,
         address _weth
     ) Ownable(msg.sender) {
         shariaCompliance = ShariaCompliance(_shariaCompliance);
         dexRouter = IDEXRouter(_dexRouter);
-        factory = SimpleFactory(_factory);
         WETH = _weth;
     }
 
@@ -160,12 +155,17 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
      */
     function createDCAOrderWithDEV(
         address targetToken,
+        address[] calldata path,
         uint256 amountPerInterval,
         uint256 intervalSeconds,
         uint256 totalIntervals
     ) external payable nonReentrant returns (uint256) {
         if (amountPerInterval == 0 || totalIntervals == 0) {
             revert InvalidAmount();
+        }
+
+        if (path.length < 2 || path[0] != WETH || path[path.length - 1] != targetToken) {
+            revert InvalidPath();
         }
 
         // Validate target token is Sharia compliant
@@ -201,6 +201,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
         order.exists = true;
 
         userOrders[msg.sender].push(orderId);
+        _storePath(order, path);
 
         // Refund excess DEV
         if (msg.value > totalRequired) {
@@ -233,12 +234,17 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
     function createDCAOrderWithToken(
         address sourceToken,
         address targetToken,
+        address[] calldata path,
         uint256 amountPerInterval,
         uint256 intervalSeconds,
         uint256 totalIntervals
     ) external nonReentrant returns (uint256) {
         if (amountPerInterval == 0 || totalIntervals == 0) {
             revert InvalidAmount();
+        }
+
+        if (path.length < 2 || path[0] != sourceToken || path[path.length - 1] != targetToken) {
+            revert InvalidPath();
         }
 
         // Validate source token is Sharia compliant
@@ -281,6 +287,7 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
         order.exists = true;
 
         userOrders[msg.sender].push(orderId);
+        _storePath(order, path);
 
         emit DCAOrderCreated(
             orderId,
@@ -323,16 +330,8 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
         // Approve router
         IERC20(tokenIn).forceApprove(address(dexRouter), amountIn);
 
-        // Get USDC address for routing
-        address usdc = shariaCompliance.getTokenAddress("USDC");
-        
-        // Build optimal swap path using library
-        address[] memory path = SwapPathBuilder.buildSwapPath(
-            address(factory),
-            tokenIn,
-            order.targetToken,
-            usdc
-        );
+        address[] storage path = order.path;
+        if (path.length < 2) revert InvalidPath();
 
         // Execute swap
         uint256[] memory amounts;
@@ -479,6 +478,15 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Get stored swap path for an order
+     * @param orderId Order ID
+     */
+    function getOrderPath(uint256 orderId) external view returns (address[] memory) {
+        if (!dcaOrders[orderId].exists) revert OrderNotFound();
+        return dcaOrders[orderId].path;
+    }
+
+    /**
      * @notice Get user's DCA orders
      * @param user User address
      */
@@ -524,5 +532,12 @@ contract ShariaDCA is Ownable, ReentrancyGuard {
     }
 
     receive() external payable {}
+
+    function _storePath(DCAOrder storage order, address[] calldata path) internal {
+        delete order.path;
+        for (uint256 i = 0; i < path.length; i++) {
+            order.path.push(path[i]);
+        }
+    }
 }
 

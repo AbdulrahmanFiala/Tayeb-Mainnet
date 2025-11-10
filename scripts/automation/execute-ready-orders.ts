@@ -1,8 +1,10 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import * as dotenv from "dotenv";
-import deployedContracts from "../config/deployedContracts.json";
+import deployedContracts from "../../config/deployedContracts.json";
 
 dotenv.config();
+
+const { ethers } = hre;
 
 /**
  * Helper function to check if a specific order is ready for execution
@@ -32,13 +34,17 @@ async function main() {
   const startTime = Date.now();
   const maxCatchUpPerOrder = 10; // Prevent infinite loops
   
-  const shariaDCA = await ethers.getContractAt(
-    "ShariaDCA",
-    deployedContracts.main.shariaDCA
-  );
+  const shariaDCAAddress = deployedContracts.main.shariaDCA;
+  if (!shariaDCAAddress) {
+    throw new Error(
+      "ShariaDCA address not found in config/deployedContracts.json. Deploy the contract first."
+    );
+  }
+
+  const shariaDCA = await ethers.getContractAt("ShariaDCA", shariaDCAAddress);
 
   console.log("🔍 Checking for ready DCA orders...");
-  console.log("Contract:", deployedContracts.main.shariaDCA);
+  console.log("Contract:", shariaDCAAddress);
   console.log("Max catch-up per order:", maxCatchUpPerOrder);
   console.log();
 
@@ -82,6 +88,9 @@ async function main() {
           
           const tx = await shariaDCA.executeDCAOrder(orderId);
           const receipt = await tx.wait();
+          if (!receipt) {
+            throw new Error("Transaction receipt unavailable");
+          }
           catchUpCount++;
           totalIntervalsCaughtUp++;
           

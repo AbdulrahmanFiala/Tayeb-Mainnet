@@ -1,9 +1,12 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
+import type { ErrorDescription } from "ethers";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 
 dotenv.config();
+
+const { ethers } = hre;
 
 async function main() {
   // Get transaction hash from environment or use default
@@ -11,10 +14,10 @@ async function main() {
   
   if (!txHash || txHash === "") {
     console.log("Usage:");
-    console.log("  TX_HASH=0x... npx hardhat run scripts/decode-failed-tx.ts --network moonbase");
+    console.log("  TX_HASH=0x... npx hardhat run scripts/decode-failed-tx.ts --network moonbeam");
     console.log();
     console.log("Example:");
-    console.log("  TX_HASH=0x773aac5810a73346407eccc695b23aa9197653b4d306effe58f2714683509a23 npx hardhat run scripts/decode-failed-tx.ts --network moonbase");
+    console.log("  TX_HASH=0x773aac5810a73346407eccc695b23aa9197653b4d306effe58f2714683509a23 npx hardhat run scripts/decode-failed-tx.ts --network moonbeam");
     process.exit(1);
   }
 
@@ -58,6 +61,10 @@ async function main() {
 
     // Get the transaction
     const tx = await ethers.provider.getTransaction(txHash);
+    if (!tx) {
+      console.log("⚠️ Transaction not found on the current RPC endpoint");
+      return;
+    }
     console.log("📋 Transaction Data:");
     console.log("  Value:", ethers.formatEther(tx.value || 0), "native token");
     console.log("  Data length:", tx.data.length, "bytes");
@@ -317,7 +324,11 @@ async function decodeErrorData(errorData: string) {
   const standardIface = new ethers.Interface(standardErrors);
   
   try {
-    const decoded = standardIface.parseError(errorData);
+    const decoded = standardIface.parseError(errorData) as ErrorDescription | null;
+    if (!decoded) {
+      console.log("  Unable to decode error with standard selectors");
+      return;
+    }
     console.log("  ✅ Decoded error:", decoded.name);
     if (decoded.args && decoded.args.length > 0) {
       console.log("  Args:", decoded.args);
@@ -363,7 +374,10 @@ async function decodeErrorData(errorData: string) {
         const iface = new ethers.Interface(artifact.abi);
         
         try {
-          const decoded = iface.parseError(errorData);
+          const decoded = iface.parseError(errorData) as ErrorDescription | null;
+          if (!decoded) {
+            continue;
+          }
           console.log("  ✅ Decoded error:", decoded.name);
           console.log("  From contract:", path.basename(contractFile, ".json"));
           if (decoded.args && decoded.args.length > 0) {

@@ -10,8 +10,7 @@ export interface HalaCoin {
   description: string;
   permissible: boolean; // Maps to contract's 'verified' field
   addresses: {
-    moonbase: string | null;
-    moonbeam?: string | null;
+    moonbeam: string | null;
   };
 }
 
@@ -67,6 +66,7 @@ export interface DeployedMain {
   shariaCompliance: string | null;
   shariaSwap: string | null;
   shariaDCA: string | null;
+  remoteSwapInitiator?: string | null;
 }
 
 export interface DeploymentMetadata {

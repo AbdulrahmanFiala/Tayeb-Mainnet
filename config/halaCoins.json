@@ -7,7 +7,7 @@
       "complianceReason": "Decentralized cryptocurrency, no interest-bearing mechanism",
       "description": "Leading decentralized cryptocurrency",
       "addresses": {
-        "moonbase": "0x9C8262260A1Cfcca24a36a2d894c2b836Cb1b4E1"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -18,7 +18,7 @@
       "complianceReason": "Smart contract platform, utility token",
       "description": "Decentralized smart contract platform",
       "addresses": {
-        "moonbase": "0xf99a0892CF3ddDCD93F0428BC5BAaCC0604856f6"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -29,7 +29,7 @@
       "complianceReason": "Stablecoin backed by fiat reserves",
       "description": "USD-pegged stablecoin",
       "addresses": {
-        "moonbase": "0x884924C7Ef93081a34bCD4C057434e21A27Dd263"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -40,7 +40,7 @@
       "complianceReason": "Digital payment protocol token",
       "description": "Fast and low-cost cross-border payments",
       "addresses": {
-        "moonbase": "0x27B76359888E279cDFCCEfD3828B55E14Bd7286D"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -51,7 +51,7 @@
       "complianceReason": "Utility token for Binance ecosystem",
       "description": "Native token of Binance exchange and BNB Chain",
       "addresses": {
-        "moonbase": "0x063Cf054036AA885C27A5508aeD580C7F4c46e0C"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -62,7 +62,7 @@
       "complianceReason": "High-performance blockchain utility token",
       "description": "High-speed blockchain platform",
       "addresses": {
-        "moonbase": "0x0FB123556Ad1B84991c96B834e3892845B56B4C2"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -73,7 +73,7 @@
       "complianceReason": "Fully reserved stablecoin",
       "description": "Fully-backed USD stablecoin",
       "addresses": {
-        "moonbase": "0x1fc1F3961ed7E9118aBeFDE142362D6FC885319a"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -84,7 +84,7 @@
       "complianceReason": "Decentralized content platform token",
       "description": "Decentralized entertainment and content-sharing platform",
       "addresses": {
-        "moonbase": "0x32602daCA58b4FFcb1d0cB3958C50599a0a42035"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -95,7 +95,7 @@
       "complianceReason": "Proof-of-stake blockchain platform token",
       "description": "Research-driven blockchain platform",
       "addresses": {
-        "moonbase": "0xcceDDE75b616EcfDFCDd42c6965918b7F1806A4a"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -106,7 +106,7 @@
       "complianceReason": "Oracle network utility token",
       "description": "Decentralized oracle network",
       "addresses": {
-        "moonbase": "0x8A8ca8e0fb175E6Ff60eCeeb698f5Ad7e2E74dc8"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -117,7 +117,7 @@
       "complianceReason": "Peer-to-peer electronic cash, no interest-bearing",
       "description": "Bitcoin fork focused on fast, low-cost payments",
       "addresses": {
-        "moonbase": "0xa28109487a910b6C7c932AB821ec9aC0a1DE4A2d"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -128,7 +128,7 @@
       "complianceReason": "Utility token for iFinex ecosystem",
       "description": "Utility token for Bitfinex and iFinex services",
       "addresses": {
-        "moonbase": "0x26Fe81919A801c3b3fA063503b33F9bcAb3D182c"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -139,7 +139,7 @@
       "complianceReason": "Cross-border payment network token",
       "description": "Open network for cross-border payments",
       "addresses": {
-        "moonbase": "0xc56c974E4C7361696A55E41fa421257e7D849Ab1"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -150,7 +150,7 @@
       "complianceReason": "Layer 1 blockchain utility token",
       "description": "Next-generation smart contract platform",
       "addresses": {
-        "moonbase": "0x5c91d50124E98C7B80acAB74BdffA88604CFE674"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -161,7 +161,7 @@
       "complianceReason": "Public distributed ledger utility token",
       "description": "Enterprise-grade distributed ledger",
       "addresses": {
-        "moonbase": "0xDB5f7DB2f35CDE7556c9787a02f94eabD876729b"
+        "moonbeam": null
       },
       "permissible": true
     },
@@ -172,7 +172,7 @@
       "complianceReason": "Proof-of-stake blockchain platform token",
       "description": "Highly scalable smart contract platform",
       "addresses": {
-        "moonbase": "0x964093e4858D7e062EBba4f76CbB7EB5f7e1c95E"
+        "moonbeam": null
       },
       "permissible": true
     }
@@ -182,8 +182,8 @@
     "USDC"
   ],
   "metadata": {
-    "version": "1.0.0",
-    "lastUpdated": "2025-11-06T01:39:22.413Z",
-    "network": "moonbase"
+    "version": "2.0.0",
+    "lastUpdated": null,
+    "network": "moonbeam"
   }
 }

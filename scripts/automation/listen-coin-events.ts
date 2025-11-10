@@ -1,9 +1,11 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
-import halaCoinsConfig from "../config/halaCoins.json";
-import deployedContractsConfig from "../config/deployedContracts.json";
-import { HalaCoinsConfig, DeployedContracts, HalaCoin } from "../config/types";
+import halaCoinsConfig from "../../config/halaCoins.json";
+import deployedContractsConfig from "../../config/deployedContracts.json";
+import { HalaCoinsConfig, DeployedContracts, HalaCoin } from "../../config/types";
+
+const { ethers } = hre;
 
 /**
  * Event Listener for ShariaCompliance Contract
@@ -11,7 +13,7 @@ import { HalaCoinsConfig, DeployedContracts, HalaCoin } from "../config/types";
  * Continuously listens to CoinRegistered, CoinRemoved, and CoinUpdated events
  * and automatically syncs JSON config when events occur.
  * 
- * Usage: npx hardhat run scripts/listen-coin-events.ts --network moonbase
+ * Usage: npx hardhat run scripts/automation/listen-coin-events.ts --network moonbeam
  * 
  * This script runs continuously. Press Ctrl+C to stop.
  */
@@ -25,7 +27,7 @@ async function main() {
   if (!shariaComplianceAddress) {
     console.error("❌ Error: ShariaCompliance contract not found in deployedContracts.json!");
     console.log("\n📝 Please deploy contracts first:");
-    console.log("   npx hardhat run scripts/deploy-core.ts --network moonbase\n");
+    console.log("   npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam\n");
     process.exit(1);
   }
 
@@ -91,7 +93,7 @@ async function main() {
             description: `Auto-synced from contract`,
             permissible: contractCoin.verified,
             addresses: {
-              moonbase: null,
+              moonbeam: null,
             },
           };
           updatedCoins.push(newCoin);
@@ -107,7 +109,7 @@ async function main() {
         },
       };
 
-      const configPath = path.join(__dirname, "..", "config", "halaCoins.json");
+      const configPath = path.join(__dirname, "..", "..", "config", "halaCoins.json");
       fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2) + "\n");
       
       console.log("✅ JSON config updated successfully!\n");
@@ -116,17 +118,27 @@ async function main() {
     }
   };
 
+  const compliance = shariaCompliance as any;
+
   // Listen to CoinRegistered event
-  shariaCompliance.on("CoinRegistered", async (coinId, name, symbol, complianceReason) => {
+  compliance.on(
+    "CoinRegistered",
+    async (
+      coinId: string,
+      name: string,
+      symbol: string,
+      complianceReason: string
+    ) => {
     console.log("🔔 CoinRegistered event detected!");
     console.log(`   Coin: ${symbol} (${name})`);
     console.log(`   ID: ${coinId}`);
     console.log();
     await syncJSON();
-  });
+    }
+  );
 
   // Listen to CoinRemoved event
-  shariaCompliance.on("CoinRemoved", async (coinId) => {
+  compliance.on("CoinRemoved", async (coinId: string) => {
     console.log("🔔 CoinRemoved event detected!");
     console.log(`   Coin ID: ${coinId}`);
     console.log();
@@ -134,16 +146,19 @@ async function main() {
   });
 
   // Listen to CoinUpdated event
-  shariaCompliance.on("CoinUpdated", async (coinId, verified, complianceReason) => {
+  compliance.on(
+    "CoinUpdated",
+    async (coinId: string, verified: boolean, complianceReason: string) => {
     console.log("🔔 CoinUpdated event detected!");
     console.log(`   Coin ID: ${coinId}`);
     console.log(`   Verified: ${verified}`);
     console.log();
     await syncJSON();
-  });
+    }
+  );
 
   // Handle errors
-  shariaCompliance.on("error", (error) => {
+  compliance.on("error", (error: unknown) => {
     console.error("❌ Event listener error:", error);
   });
 

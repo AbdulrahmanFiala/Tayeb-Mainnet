@@ -1,0 +1,4 @@
+endpoint: wss://wss.api.moonbeam.network
+block: 5750000
+port: 9946
+db: ./.chopsticks-cache/moonbeam.db

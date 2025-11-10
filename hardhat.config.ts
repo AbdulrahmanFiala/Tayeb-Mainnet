@@ -17,27 +17,33 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    // Moonbase Alpha Testnet
-    moonbase: {
-      url: process.env.MOONBASE_RPC_URL,
-      chainId: 1287,
+    // Moonbeam Mainnet (Production)
+    moonbeam: {
+      url: process.env.MOONBEAM_RPC_URL || "https://rpc.api.moonbeam.network",
+      chainId: 1284,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gas: 5000000,
       gasPrice: 1000000000, // 1 Gwei
       timeout: 300000, // 5 minutes
-      httpHeaders: {},
     },
-    // Moonbeam Mainnet
-    moonbeam: {
-      url: "https://rpc.api.moonbeam.network",
-      chainId: 1284,
+    // Chopsticks fork / custom RPC (set via .env)
+    chopsticks: {
+      url: process.env.CHOPSTICKS_RPC_URL || "http://127.0.0.1:9949",
+      chainId: process.env.CHOPSTICKS_CHAIN_ID ? Number(process.env.CHOPSTICKS_CHAIN_ID) : 1284,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gas: 5000000,
+      gasPrice: 1000000000,
+      timeout: 300000,
     },
-    // Local development
+    // Local Hardhat network
     hardhat: {
       chainId: 1337,
     },
   },
+  // Cross-chain XCM configuration
+  // Hydration (parachain 2034) is a Substrate chain, not EVM-compatible
+  // XCM integration uses Moonbeam's XCM Transactor precompile at 0x0806
+  // See config/xcmConfig.json for full Hydration Omnipool configuration
   paths: {
     sources: "./contracts",
     tests: "./test",
@@ -47,14 +53,6 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || "", 
     customChains: [
-      {
-        network: "moonbaseAlpha",
-        chainId: 1287,
-        urls: {
-          apiURL: "https://api-moonbase.moonscan.io/api",
-          browserURL: "https://moonbase.moonscan.io",
-        },
-      },
       {
         network: "moonbeam",
         chainId: 1284,

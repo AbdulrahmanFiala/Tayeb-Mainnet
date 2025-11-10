@@ -1,17 +1,15 @@
 import { run } from "hardhat";
-import halaCoinsConfig from "../config/halaCoins.json";
-import deployedContractsConfig from "../config/deployedContracts.json";
-import { HalaCoinsConfig, DeployedContracts } from "../config/types";
+import halaCoinsConfig from "../../config/halaCoins.json";
+import deployedContractsConfig from "../../config/deployedContracts.json";
+import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
 
 /**
- * Verify all deployed contracts on Moonbase Alpha
- * 
+ * Verify deployed contracts on Moonbeam / Chopsticks fork
+ *
  * This script verifies:
- * 1. All MockERC20 tokens
- * 2. AMM contracts (Factory, Router)
- * 3. Main contracts (ShariaCompliance, ShariaSwap, ShariaDCA)
- * 4. All liquidity pairs
- * 
+ * 1. All configured ERC20 tokens (optional mocks)
+ * 2. Core Tayeb contracts (ShariaCompliance, ShariaSwap, ShariaDCA)
+ *
  * Requires ETHERSCAN_API_KEY to be set in .env file.
  * Checks verification status before attempting to avoid unnecessary API calls.
  */
@@ -19,7 +17,7 @@ async function main() {
   const config = halaCoinsConfig as HalaCoinsConfig;
   const contractsConfig = deployedContractsConfig as DeployedContracts;
 
-  console.log("🔍 Verifying all contracts on Moonbase Alpha...\n");
+  console.log("🔍 Verifying all contracts on Moonbeam...\n");
 
   if (!process.env.ETHERSCAN_API_KEY) {
     console.error("❌ Error: ETHERSCAN_API_KEY not found in environment variables!");
@@ -41,9 +39,7 @@ async function main() {
 
   const results = {
     tokens: { verified: 0, failed: 0 },
-    amm: { verified: 0, failed: 0 },
     main: { verified: 0, failed: 0 },
-    pairs: { verified: 0, failed: 0 },
   };
 
   const failed: Array<{ type: string; name: string; address: string; error: string }> = [];
@@ -71,7 +67,7 @@ async function main() {
       await run("verify:verify", {
         address: address,
         constructorArguments: constructorArgs.length > 0 ? constructorArgs : undefined,
-        network: "moonbase",
+        network: "moonbeam",
       });
       console.log(`✅ ${name} verified successfully!`);
       return "verified";
@@ -108,7 +104,7 @@ async function main() {
   // Verify Tokens
   // ============================================================================
   console.log("=".repeat(60));
-  console.log("📦 VERIFYING TOKENS");
+  console.log("📦 VERIFYING TOKENS (optional)");
   console.log("=".repeat(60));
 
   const tokens = contractsConfig.tokens || {};
@@ -119,10 +115,13 @@ async function main() {
         coin: config.coins.find((c) => c.symbol === symbol),
       }))
     : config.coins
-        .filter((coin) => coin.addresses.moonbase && coin.addresses.moonbase !== "null")
+        .filter((coin) => {
+          const addr = coin.addresses.moonbeam;
+          return addr && addr !== "null";
+        })
         .map((coin) => ({
           symbol: coin.symbol,
-          address: coin.addresses.moonbase!,
+          address: coin.addresses.moonbeam!,
           coin,
         }));
 
@@ -144,33 +143,6 @@ async function main() {
   }
 
   // ============================================================================
-  // Verify AMM Contracts
-  // ============================================================================
-  console.log("\n" + "=".repeat(60));
-  console.log("🏭 VERIFYING AMM CONTRACTS");
-  console.log("=".repeat(60));
-
-  // SimpleFactory (no constructor args)
-  const factoryAddress = contractsConfig.amm?.factory;
-  if (factoryAddress) {
-    const result = await verifyContract("amm", "SimpleFactory", factoryAddress, [], "SimpleFactory");
-    if (result === "verified") results.amm.verified++;
-    else results.amm.failed++;
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  // SimpleRouter (factory, weth)
-  const routerAddress = contractsConfig.amm?.router;
-  const wethAddress = contractsConfig.amm?.weth;
-  if (routerAddress && factoryAddress && wethAddress) {
-    const routerArgs = [factoryAddress, wethAddress];
-    const result = await verifyContract("amm", "SimpleRouter", routerAddress, routerArgs, "SimpleRouter");
-    if (result === "verified") results.amm.verified++;
-    else results.amm.failed++;
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  // ============================================================================
   // Verify Main Contracts
   // ============================================================================
   console.log("\n" + "=".repeat(60));
@@ -186,10 +158,12 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  // ShariaSwap (shariaCompliance, router, weth, factory)
+  // ShariaSwap (shariaCompliance, router, weth)
   const shariaSwapAddress = contractsConfig.main?.shariaSwap;
-  if (shariaSwapAddress && shariaComplianceAddress && routerAddress && wethAddress && factoryAddress) {
-    const swapArgs = [shariaComplianceAddress, routerAddress, wethAddress, factoryAddress];
+  const routerAddress = contractsConfig.amm?.router;
+  const wethAddress = contractsConfig.amm?.weth;
+  if (shariaSwapAddress && shariaComplianceAddress && routerAddress && wethAddress) {
+    const swapArgs = [shariaComplianceAddress, routerAddress, wethAddress];
     const result = await verifyContract("main", "ShariaSwap", shariaSwapAddress, swapArgs, "ShariaSwap");
     if (result === "verified") results.main.verified++;
     else results.main.failed++;
@@ -207,26 +181,6 @@ async function main() {
   }
 
   // ============================================================================
-  // Verify Pairs
-  // ============================================================================
-  console.log("\n" + "=".repeat(60));
-  console.log("🔗 VERIFYING LIQUIDITY PAIRS");
-  console.log("=".repeat(60));
-
-  const pairs = contractsConfig.pairs || {};
-  const pairEntries = Object.entries(pairs).filter(([_, address]) => address && address !== "null");
-
-  console.log(`Found ${pairEntries.length} pairs to verify\n`);
-
-  for (const [pairKey, pairAddress] of pairEntries) {
-    // Pairs are created by factory and have no constructor args (SimplePair constructor is empty)
-    const result = await verifyContract("pairs", pairKey, pairAddress as string, [], "SimplePair");
-    if (result === "verified") results.pairs.verified++;
-    else results.pairs.failed++;
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  // ============================================================================
   // Summary
   // ============================================================================
   console.log("\n" + "=".repeat(60));
@@ -234,25 +188,16 @@ async function main() {
   console.log("=".repeat(60));
 
   const totalVerified =
-    results.tokens.verified + results.amm.verified + results.main.verified + results.pairs.verified;
-  const totalFailed =
-    results.tokens.failed + results.amm.failed + results.main.failed + results.pairs.failed;
+    results.tokens.verified + results.main.verified;
+  const totalFailed = results.tokens.failed + results.main.failed;
 
   console.log("\n📦 Tokens:");
   console.log(`   ✅ Verified: ${results.tokens.verified}`);
   console.log(`   ❌ Failed: ${results.tokens.failed}`);
 
-  console.log("\n🏭 AMM Contracts:");
-  console.log(`   ✅ Verified: ${results.amm.verified}`);
-  console.log(`   ❌ Failed: ${results.amm.failed}`);
-
   console.log("\n🏛️  Main Contracts:");
   console.log(`   ✅ Verified: ${results.main.verified}`);
   console.log(`   ❌ Failed: ${results.main.failed}`);
-
-  console.log("\n🔗 Pairs:");
-  console.log(`   ✅ Verified: ${results.pairs.verified}`);
-  console.log(`   ❌ Failed: ${results.pairs.failed}`);
 
   console.log("\n" + "=".repeat(60));
   console.log("📊 TOTALS");
@@ -269,7 +214,7 @@ async function main() {
   }
 
   console.log("\n💡 View verified contracts on Moonscan:");
-  console.log("   https://moonbase.moonscan.io");
+  console.log("   https://moonscan.io");
 }
 
 main()

@@ -14,10 +14,10 @@ contract ShariaCompliance is Ownable {
     // ============================================================================
 
     struct ShariaCoin {
-        string id;              // Symbol (e.g., "BTC", "ETH")
+        string id;              
         string name;
         string symbol;
-        address tokenAddress;   // ← ADD: Token contract address
+        address tokenAddress;  
         bool verified;
         string complianceReason;
         bool exists;
@@ -91,7 +91,7 @@ contract ShariaCompliance is Ownable {
         string memory coinId,
         string memory name,
         string memory symbol,
-        address tokenAddress,  // ← ADD parameter
+        address tokenAddress, 
         string memory complianceReason
     ) external onlyOwner {
         if (shariaCoins[coinId].exists) {
@@ -117,7 +117,7 @@ contract ShariaCompliance is Ownable {
             id: coinId,
             name: name,
             symbol: symbol,
-            tokenAddress: tokenAddress,  // ← Store address
+            tokenAddress: tokenAddress,  
             verified: true,
             complianceReason: complianceReason,
             exists: true
@@ -276,7 +276,7 @@ contract ShariaCompliance is Ownable {
      */
     function _initializeDefaultCoins() private {
         // All Initial Hala Coins are registered programmatically from config
-        // See scripts/deploy-core.ts for registration logic
+        // See scripts/deploy/deploy-core.ts for registration logic
     }
 
     /**

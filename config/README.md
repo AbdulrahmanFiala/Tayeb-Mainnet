@@ -11,11 +11,11 @@ Single source of truth for all Initial Hala Coins configuration. This file:
 - Can be imported by both backend scripts and frontend
 
 ### `deployedContracts.json`
-Stores all deployed contract addresses (AMM + Main contracts). This file:
-- Contains Factory, Router, WETH addresses (updated by `deploy-amm-core.ts`)
-- Contains all token addresses (updated by `deploy-tokens.ts`)
-- Contains all pair addresses (updated by `create-pairs.ts`)
-- Contains ShariaCompliance, ShariaSwap, ShariaDCA addresses (updated by `deploy-core.ts`)
+Stores all deployed contract addresses (DEX config + Tayeb contracts). This file:
+- Contains router + WETH addresses (manually curated or synced via deployment scripts)
+- Optionally tracks token addresses (`tokens`) for convenience
+- Optionally tracks external pair addresses under `pairs`
+- Records deployed Tayeb contracts in the `main` section
 - Includes deployment metadata (date, deployer, block number)
 - Can be imported by frontend for connecting to contracts
 
@@ -25,29 +25,21 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 
 ## How Scripts Update Config Files
 
-### `deploy-tokens.ts`
-- Deploys MockERC20 tokens
-- Updates `halaCoins.json`: Adds token addresses to `addresses.moonbase`
-- Updates `deployedContracts.json`: Adds addresses to `tokens` section
-
-### `deploy-amm-core.ts`
-- Deploys SimpleFactory and SimpleRouter
-- Updates `deployedContracts.json`: Adds addresses to `amm` section (factory, router, weth)
-
-### `create-pairs.ts`
-- Creates liquidity pairs via Factory
-- Updates `deployedContracts.json`: Adds pair addresses to `pairs` section (e.g., "BTC_USDC": "0x...")
-
-### `deploy-core.ts`
+### `deploy/deploy-core.ts`
 - Deploys ShariaCompliance, ShariaSwap, ShariaDCA
 - Registers coins from `halaCoins.json` to ShariaCompliance contract
 - Updates `deployedContracts.json`: Adds addresses to `main` section
+- Leaves `amm.router` / `amm.weth` untouched (expects them to be pre-filled)
 
-### `sync-coins-from-contract.ts`
+### `deploy/deploy-all.ts`
+- Runs `deploy/deploy-core.ts` followed by `xcm/deploy-remote-swap.ts`
+- Useful for mainnet or orchestrated deployments
+
+### `deploy/sync-coins-from-contract.ts`
 - Reads all coins from ShariaCompliance contract
 - Updates `halaCoins.json`: Syncs coin data, sets `permissible` flags
 - Updates `deployedContracts.json`: Syncs token addresses
 
-### `listen-coin-events.ts`
+### `automation/listen-coin-events.ts`
 - Listens to contract events (CoinRegistered, CoinRemoved, CoinUpdated)
 - Automatically updates both JSON files when events occur
