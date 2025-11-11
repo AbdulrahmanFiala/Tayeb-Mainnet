@@ -121,7 +121,8 @@ This installs:
 First, deploy the essential on-chain components:
 
 ```bash
-npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-crosschain-initiator.ts --network moonbeam
 ```
 
 This deploys:

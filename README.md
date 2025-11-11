@@ -10,7 +10,7 @@ A comprehensive decentralized platform for Sharia-compliant cryptocurrency inves
 - **Transparent Documentation**: Each token includes compliance reasoning
 
 ### 2. Token Swapping (ShariaLocalSwap)
-- **Router Integration**: Works with any Uniswap V2-compatible router (e.g. StellaSwap on Moonbeam)
+- **Router Integration**: Works with any Uniswap V2-compatible router (e.g. StellaSwap on Moonbeam). Tayeb never supplies liquidity itself—the router and path must come from an external DEX SDK.
 - **User-Defined Paths**: Callers provide the exact swap path for full control and transparency
 - **Compliance Enforcement**: Only allows swaps into Sharia-compliant assets registered on-chain
 - **Swap History**: Track all user swap activities
@@ -90,6 +90,8 @@ Token swapping with DEX integration and compliance validation.
 - **Path Transparency**: Frontends select their preferred pools and pass the path to the contract
 - **Compliance Guardrails**: Contract enforces that the output token is Sharia-approved
 - Token addresses are automatically queried from `ShariaCompliance` contract. No separate registration needed.
+- Plays nicely with DEX routing SDKs (StellaSwap, Odyssey, etc.)—build the optimal route off-chain and forward it through Tayeb for compliance enforcement.
+- **SDK Friendly**: call StellaSwap’s router helpers, then forward `swapCallParameters.path` into Tayeb contracts to keep compliance guarantees.
 
 ### ShariaDCA.sol
 Automated Dollar Cost Averaging with local automation script.
@@ -197,6 +199,66 @@ For detailed usage, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#debugging-failed
    - Includes: swaps, DCA orders, frontend integration, error handling
 
 For coin management, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#coin-management-workflow).
+
+## 🤝 Using StellaSwap SDK with Tayeb
+
+Let StellaSwap compute optimal routes while Tayeb enforces Sharia compliance. The `plan-local-swap` helper wraps `@stellaswap/swap-sdk` so you can inspect router hints and address paths before calling `ShariaLocalSwap` or `ShariaDCA`. If the SDK cannot return a route, the helper aborts—Tayeb will not fall back to custom liquidity or guesses.
+
+```
+npm run plan:local-swap -- --token-in GLMR --token-out USDC_WH --amount 1 --slippage-bps 100
+```
+
+Sample output (successful quote):
+
+```
+🔍 StellaSwap Route Planner
+
+Input token:
+  Symbol:       GLMR
+  Name:         Glimmer
+  Address:      0xacc15dc74880c9944775448304b263d191c6077f
+  Decimals:     18
+
+Output token:
+  Symbol:       USDC_WH (variant of USDC)
+  Name:         USD Coin (Wormhole)
+  Address:      0x931715fee2d06333043d11f658c8ce934ac61d0c
+  Decimals:     6
+
+Quote parameters:
+  Amount (human):   1
+  Amount (raw):     1000000000000000000
+  Slippage (bps):   100
+  Account:          0x0000000000000000000000000000000000000000
+
+✅ Router suggested by StellaSwap SDK:
+  0x70085a098FA8F080Ba831adB4e64fbC9FD07e062
+
+🛣️  Suggested swap path:
+  [0] 0xacc15dc74880c9944775448304b263d191c6077f (GLMR)
+  [1] 0x931715fee2d06333043d11f658c8ce934ac61d0c (USDC_WH)
+
+📈 Estimated output:
+  Raw:    994365
+  Human:  0.994365
+```
+
+Key takeaways:
+
+- ✅ The script uses `@stellaswap/swap-sdk` to request a quote with your chosen slippage.
+- ✅ If the SDK cannot return a route, the script stops and asks you to retry later—Tayeb will not execute swaps unless an external router SDK provides the path.
+- ✅ Paths are resolved against `halaCoins.json`, so the final hop is guaranteed to be a Sharia-listed asset.
+- ✅ You can pass `--dump` to inspect the raw response for advanced routing analysis.
+- ✅ Feed the printed `path` straight into Tayeb contracts while Tayeb handles the compliance checks on-chain.
+
+> **Heads-up:** As of November 2025 the public StellaSwap quote API intermittently responds with `500` (`could not detect network`). When this happens, contact StellaSwap support; Tayeb will not fall back to ad-hoc routing or local liquidity.
+
+If the SDK is unavailable, the planner exits early with a message similar to:
+
+```
+❌ StellaSwap SDK did not return a usable route. Tayeb only executes swaps that are planned by external router SDKs.
+   Please retry later or contact StellaSwap support if the issue persists.
+```
 
 ## 🌉 Cross-Chain Swaps via XCM
 

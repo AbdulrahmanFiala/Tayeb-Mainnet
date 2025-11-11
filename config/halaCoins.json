@@ -27,7 +27,7 @@
           "decimals": 8,
           "addresses": {
             "moonbeam": "0xffffffff1b4bb1ac5749f73d866ffc91a3432c47"
-          },
+      },
           "assetId": null
         },
         {

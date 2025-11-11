@@ -148,7 +148,7 @@ async function main() {
   const xcmConfig = loadXcmConfig();
 
   if (!deployedContracts.main?.crosschainSwapInitiator) {
-    throw new Error("CrosschainSwapInitiator not deployed. Run deploy-core.ts first.");
+    throw new Error("CrosschainSwapInitiator not deployed. Run deploy-crosschain-initiator.ts first.");
   }
 
   // Get signer

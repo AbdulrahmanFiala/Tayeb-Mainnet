@@ -107,41 +107,7 @@ async function main() {
   console.log("=".repeat(60));
   console.log("📦 VERIFYING TOKENS (optional)");
   console.log("=".repeat(60));
-
-  const tokens = contractsConfig.tokens || {};
-  const tokensToVerify = Object.keys(tokens).length > 0 
-    ? Object.entries(tokens).map(([symbol, address]) => ({
-        symbol,
-        address: address!,
-        coin: config.coins.find((c) => c.symbol === symbol),
-      }))
-    : config.coins
-        .filter((coin) => {
-          const addr = coin.addresses.moonbeam;
-          return addr && addr !== "null";
-        })
-        .map((coin) => ({
-          symbol: coin.symbol,
-          address: coin.addresses.moonbeam!,
-          coin,
-        }));
-
-  for (const { symbol, address, coin } of tokensToVerify) {
-    if (!coin) {
-      console.warn(`⚠️  Coin ${symbol} not found in config, skipping`);
-      continue;
-    }
-
-    const tokenName = `Mock ${coin.name}`;
-    const constructorArgs = [tokenName, coin.symbol, coin.decimals];
-    const result = await verifyContract("tokens", `${symbol} (${coin.name})`, address, constructorArgs, "MockERC20");
-    
-    if (result === "verified") results.tokens.verified++;
-    else results.tokens.failed++;
-
-    // Rate limiting
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
+  console.log("⏭️  Skipping token/pair verification as per current workflow.\n");
 
   // ============================================================================
   // Verify Main Contracts

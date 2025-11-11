@@ -31,6 +31,7 @@ Estimated need: **2-3 GLMR** (~$0.40-$0.60)
 - [ ] Verify XCM Transactor precompile address: `0x0000000000000000000000000000000000000806`
 - [ ] Confirm Hydration parachain ID: `2034`
 - [ ] Verify Omnipool pallet index: `75`
+- [ ] Run `npm run plan:local-swap -- --token-in GLMR --token-out USDC_WH --amount 1` to confirm the router hint matches `config/deployedContracts.json`. If the command fails, pause and contact the external DEX; Tayeb will not operate without an SDK-provided route.
 
 ---
 
@@ -47,10 +48,11 @@ MOONBEAM_RPC_URL=https://rpc.api.moonbeam.network
 npx hardhat compile
 
 # 3. Deploy core contracts (ShariaCompliance + CrosschainSwapInitiator)
-npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-crosschain-initiator.ts --network moonbeam
 ```
 
-**Expected Output**:
+**Expected Output** (per script):
 ```
 🚀 Deploying Main Contracts to Moonbeam...
 Account: 0xYourAddress
@@ -89,7 +91,7 @@ npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
 # Verify ShariaCompliance
 npx hardhat verify --network moonbeam 0xABC123...
 
-# Verify CrosschainSwapInitiator (already deployed via deploy-core)
+# Verify CrosschainSwapInitiator
 npx hardhat verify --network moonbeam 0xDEF456... \
   "0x0000000000000000000000000000000000000806" \
   "0xABC123..."
@@ -173,12 +175,16 @@ npx hardhat run scripts/test-mainnet-deployment.ts --network moonbeam
 ```bash
 # Add halal coins to ShariaCompliance
 npx hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam
+
+# Plan a mainnet swap route (off-chain)
+npm run plan:local-swap -- --token-in GLMR --token-out USDC_WH --amount 1
 ```
 
 **Checklist**:
 - [ ] Halal coins added to ShariaCompliance
 - [ ] Verify on Moonscan: check contract state
 - [ ] Test `isShariaCompliant("BTC")` returns `true`
+- [ ] Route planner returns the expected router/path for target swaps (if it fails, escalate to the DEX instead of crafting manual paths)
 
 ## Testing Checklist
 

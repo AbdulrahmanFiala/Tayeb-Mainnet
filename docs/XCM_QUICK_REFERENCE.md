@@ -4,7 +4,8 @@
 
 ```bash
 # Deploy ShariaCompliance + CrosschainSwapInitiator (core)
-npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-crosschain-initiator.ts --network moonbeam
 
 # Initiate swap (interactive)
 npx hardhat run scripts/xcm/initiate-remote-swap.ts --network moonbeam

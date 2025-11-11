@@ -7,9 +7,13 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "deploy:mainnet": "hardhat run scripts/deploy/deploy-all.ts --network moonbeam",
-    "deploy:core": "hardhat run scripts/deploy/deploy-core.ts --network moonbeam",
+    "deploy:sharia-compliance": "hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam",
+    "deploy:crosschain": "hardhat run scripts/deploy/deploy-crosschain-initiator.ts --network moonbeam",
+    "deploy:local": "hardhat run scripts/deploy/deploy-sharia-local-swap.ts --network moonbeam",
+    "deploy:dca": "hardhat run scripts/deploy/deploy-sharia-dca.ts --network moonbeam",
     "verify:all": "hardhat run scripts/deploy/verify-all.ts --network moonbeam",
     "sync:coins": "hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam",
+    "plan:local-swap": "ts-node scripts/automation/plan-local-swap.ts",
     "listen:events": "hardhat run scripts/automation/listen-coin-events.ts --network moonbeam"
   },
   "keywords": [
@@ -50,6 +54,7 @@
     "@openzeppelin/contracts": "^5.0.1",
     "@polkadot/api": "^12.4.2",
     "@polkadot/api-augment": "^12.4.2",
+    "@stellaswap/swap-sdk": "^0.0.16",
     "dotenv": "^16.3.1"
   }
 }

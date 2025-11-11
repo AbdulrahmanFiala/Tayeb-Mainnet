@@ -26,14 +26,25 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 
 ## How Scripts Update Config Files
 
-### `deploy/deploy-core.ts`
-- Deploys ShariaCompliance and CrosschainSwapInitiator
-- Registers both base coins and any declared variants from `halaCoins.json` to the ShariaCompliance contract
-- Updates `deployedContracts.json`: Adds addresses to `main` section
-- Leaves `amm.router` / `amm.weth` untouched (expects them to be pre-filled)
+### `deploy/deploy-sharia-compliance.ts`
+- Deploys `ShariaCompliance`
+- Registers any base coins or variants from `halaCoins.json` that have Moonbeam addresses
+- Updates `deployedContracts.json` with the contract address and metadata
+
+### `deploy/deploy-crosschain-initiator.ts`
+- Deploys `CrosschainSwapInitiator` using constructor arguments from `config/xcmConfig.json`
+- Updates `deployedContracts.json` metadata
+
+### `deploy/deploy-sharia-local-swap.ts`
+- Deploys `ShariaLocalSwap` against the configured router/WGLMR pair
+- Persists the deployed address to `deployedContracts.json`
+
+### `deploy/deploy-sharia-dca.ts`
+- Deploys `ShariaDCA` against the configured router/WGLMR pair
+- Persists the deployed address to `deployedContracts.json`
 
 ### `deploy/deploy-all.ts`
-- Runs `deploy/deploy-core.ts`, then deploys ShariaLocalSwap and ShariaDCA inline
+- Convenience wrapper that runs all four deploy scripts (compliance, cross-chain initiator, ShariaLocalSwap, ShariaDCA)
 - Useful for mainnet or orchestrated deployments (deploys/updates everything in one go)
 
 ### `automation/sync-coins-from-contract.ts`
@@ -44,3 +55,9 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 ### `automation/listen-coin-events.ts`
 - Listens to contract events (CoinRegistered, CoinRemoved, CoinUpdated)
 - Automatically updates both JSON files when events occur
+
+### `automation/plan-local-swap.ts`
+- Queries StellaSwap's hybrid router via `@stellaswap/swap-sdk`
+- Resolves token addresses from `halaCoins.json`
+- Prints router hints and path arrays for use with `ShariaLocalSwap`
+- Exits with an error if the external SDK cannot supply a route (Tayeb never falls back to proprietary liquidity)

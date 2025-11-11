@@ -4,12 +4,15 @@
 
 ## Overview
 
-The deployment flow now consists of two tiers:
+The deployment flow is modular:
 
-1. **Core Contracts** – `ShariaCompliance`, `CrosschainSwapInitiator`  
-   Script: `scripts/deploy/deploy-core.ts`
-2. **Full Stack (Optional)** – adds `ShariaLocalSwap` and `ShariaDCA`  
-   Script: `scripts/deploy/deploy-all.ts` (runs core, then deploys ShariaLocalSwap + ShariaDCA inline)
+- Individual scripts exist for each contract:
+  - `scripts/deploy/deploy-sharia-compliance.ts`
+  - `scripts/deploy/deploy-crosschain-initiator.ts`
+  - `scripts/deploy/deploy-sharia-local-swap.ts`
+  - `scripts/deploy/deploy-sharia-dca.ts`
+- A single wrapper remains for full deployments:
+  - `scripts/deploy/deploy-all.ts` (runs every deploy script in sequence)
 
 All addresses are written to `config/deployedContracts.json`. Tokens are registered from `config/halaCoins.json` automatically.
 
@@ -23,6 +26,7 @@ All addresses are written to `config/deployedContracts.json`. Tokens are registe
     "weth": "0x..."
   }
   ```
+- Optional: `npm run plan:local-swap -- --token-in GLMR --token-out USDC_WH --amount 1` to verify the router/path returned by the StellaSwap SDK matches your configuration. If the command fails, pause deployment until the external DEX API is healthy again.
 - Optional: populate `tokens` / `pairs` sections if you want to track existing liquidity.
 
 ## One-Step Deploy
@@ -35,22 +39,31 @@ npm run deploy:mainnet             # Moonbeam mainnet (⚠️ real GLMR)
 
 ## Manual Steps
 
-### 1. Deploy Core Contracts
+### 1. Deploy ShariaCompliance (with token registration)
 ```bash
-npx hardhat run scripts/deploy/deploy-core.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam
 ```
-Actions performed:
-- Deploys `ShariaCompliance` and `CrosschainSwapInitiator`
-- Registers all tokens from `config/halaCoins.json`
-- Writes addresses & metadata back to `config/deployedContracts.json`
+This deploys the registry and registers every coin/variant in `halaCoins.json` that has a Moonbeam address.
 
-Re-running the script is safe; it will reuse existing deployments when addresses are already set.
-
-### 2. Deploy ShariaLocalSwap & ShariaDCA (Optional)
+### 2. Deploy CrosschainSwapInitiator
 ```bash
-npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam
+npx hardhat run scripts/deploy/deploy-crosschain-initiator.ts --network moonbeam
 ```
-`deploy-all` re-runs `deploy-core`, then deploys `ShariaLocalSwap` and `ShariaDCA`. It is idempotent; reruns reuse existing deployments.
+Uses constructor parameters from `config/xcmConfig.json` and updates `deployedContracts.json`.
+
+### 3. Deploy ShariaLocalSwap (Optional)
+```bash
+npx hardhat run scripts/deploy/deploy-sharia-local-swap.ts --network moonbeam
+```
+Wraps the configured DEX router for compliant swaps.
+
+### 4. Deploy ShariaDCA (Optional)
+```bash
+npx hardhat run scripts/deploy/deploy-sharia-dca.ts --network moonbeam
+```
+Installs the DCA engine against the same router.
+
+> Prefer a wrapper? `npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam` runs all four steps sequentially.
 
 ### 3. Update Token Registry (Optional)
 Add new assets to `halaCoins.json` and run:
@@ -76,7 +89,7 @@ Re-running skips already-verified contracts.
 
 - [ ] Fund `ShariaLocalSwap` with necessary token approvals (if executing on behalf of a multisig)
 - [ ] Create example DCA orders and ensure `path` arrays are valid
-- [ ] Run a low-value swap on mainnet to confirm router + paths
+- [ ] Run a low-value swap on mainnet to confirm router + paths (prep paths with `npm run plan:local-swap`; abort if the SDK reports no route)
 - [ ] Configure automation scripts (`automation/auto-execute-dca.ts`, `automation/execute-ready-orders.ts`)
 - [ ] Configure mainnet monitors for XCM swaps if using the bridge
 
