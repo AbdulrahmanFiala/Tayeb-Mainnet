@@ -1,13 +1,13 @@
 import hre from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
-import halaCoinsConfig from "../../config/halaCoins.json";
+import tayebCoinsConfig from "../../config/tayebCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
 import {
-  HalaCoinsConfig,
+  TayebCoinsConfig,
   DeployedContracts,
-  HalaCoin,
-  HalaCoinVariant,
+  TayebCoin,
+  TayebCoinVariant,
 } from "../../config/types";
 
 const { ethers } = hre;
@@ -28,8 +28,8 @@ const { ethers } = hre;
  * Usage: npx hardhat run scripts/automation/sync-coins-from-contract.ts --network moonbeam
  */
 async function main() {
-  const config = halaCoinsConfig as HalaCoinsConfig;
-  const clonedCoins: HalaCoin[] = config.coins.map((coin) => ({
+  const config = tayebCoinsConfig as TayebCoinsConfig;
+  const clonedCoins: TayebCoin[] = config.coins.map((coin) => ({
     ...coin,
     addresses: {
       ...coin.addresses,
@@ -137,7 +137,7 @@ async function main() {
   for (const contractCoin of contractCoins) {
     if (!symbolIndexMap.has(contractCoin.id)) {
       // New coin from contract - add to JSON
-      const newCoin: HalaCoin = {
+      const newCoin: TayebCoin = {
         symbol: contractCoin.id,
         name: contractCoin.name,
         decimals: 18, // Default, will need manual update
@@ -163,7 +163,7 @@ async function main() {
   console.log();
 
   // Update JSON
-  const updatedConfig: HalaCoinsConfig = {
+  const updatedConfig: TayebCoinsConfig = {
     ...config,
     coins: clonedCoins,
     metadata: {
@@ -172,7 +172,7 @@ async function main() {
     },
   };
 
-  const configPath = path.join(__dirname, "..", "..", "config", "halaCoins.json");
+  const configPath = path.join(__dirname, "..", "..", "config", "tayebCoins.json");
   fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2) + "\n");
 
   console.log("=".repeat(60));

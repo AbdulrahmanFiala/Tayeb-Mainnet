@@ -1,8 +1,8 @@
 import { run } from "hardhat";
-import halaCoinsConfig from "../../config/halaCoins.json";
+import tayebCoinsConfig from "../../config/tayebCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
 import xcmConfig from "../../config/xcmConfig.json";
-import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
+import { TayebCoinsConfig, DeployedContracts } from "../../config/types";
 
 /**
  * Verify deployed contracts on Moonbeam mainnet
@@ -15,7 +15,7 @@ import { HalaCoinsConfig, DeployedContracts } from "../../config/types";
  * Checks verification status before attempting to avoid unnecessary API calls.
  */
 async function main() {
-  const config = halaCoinsConfig as HalaCoinsConfig;
+  const config = tayebCoinsConfig as TayebCoinsConfig;
   const contractsConfig = deployedContractsConfig as DeployedContracts;
 
   console.log("🔍 Verifying all contracts on Moonbeam...\n");

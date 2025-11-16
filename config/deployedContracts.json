@@ -1,7 +1,7 @@
 {
   "network": "moonbeam",
   "version": "2.0.0",
-  "lastDeployed": "2025-11-11T00:31:00.490Z",
+  "lastDeployed": "2025-11-16T08:12:18.266Z",
   "amm": {
     "factory": null,
     "router": "0xe6d0ed3759709b743707dcfecae39bc180c981fe",
@@ -11,12 +11,13 @@
     "shariaCompliance": "0x0f2aeaC3558dBE8061d3a94f14857917E4CC9dad",
     "shariaLocalSwap": "0x57fEb0e9887852F96814451A601799ED318a532E",
     "shariaDCA": null,
-    "crosschainSwapInitiator": "0xe58574232BA8Ee084943977af055948c0FD9fBc0"
+    "crosschainSwapInitiator": "0xDa0Baa3b8C25Dc0661745dc5b24d2B3151BB7760",
+    "crosschainSwapInitiatorNoSdk": "0xd21fE5d8F72179Cd68D7022037A9e2ef1471101b"
   },
   "tokens": {},
   "pairs": {},
   "metadata": {
-    "deploymentDate": "2025-11-11T00:31:00.490Z",
+    "deploymentDate": "2025-11-16T05:53:46.577Z",
     "deployer": "0xAf2218E35E1164d6095E05f7C5559D8cc3789F00"
   }
 }

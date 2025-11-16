@@ -1,9 +1,9 @@
 import hre from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
-import halaCoinsConfig from "../../config/halaCoins.json";
+import tayebCoinsConfig from "../../config/tayebCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
-import { HalaCoinsConfig, DeployedContracts, HalaCoin } from "../../config/types";
+import { TayebCoinsConfig, DeployedContracts, TayebCoin } from "../../config/types";
 
 const { ethers } = hre;
 
@@ -47,7 +47,7 @@ async function main() {
     
     try {
       // Import and run sync script logic
-      const config = halaCoinsConfig as HalaCoinsConfig;
+      const config = tayebCoinsConfig as TayebCoinsConfig;
       const contractCoins = await shariaCompliance.getAllShariaCoins();
       
       const contractCoinsMap = new Map<string, any>();
@@ -55,13 +55,13 @@ async function main() {
         contractCoinsMap.set(coin.id, coin);
       }
 
-      const jsonCoinsMap = new Map<string, HalaCoin>();
+      const jsonCoinsMap = new Map<string, TayebCoin>();
       for (const coin of config.coins) {
         jsonCoinsMap.set(coin.symbol, coin);
       }
 
       const contractSymbols = new Set<string>();
-      const updatedCoins: HalaCoin[] = [];
+      const updatedCoins: TayebCoin[] = [];
 
       // Update existing coins
       for (const jsonCoin of config.coins) {
@@ -85,7 +85,7 @@ async function main() {
       // Add new coins from contract
       for (const contractCoin of contractCoins) {
         if (!jsonCoinsMap.has(contractCoin.id)) {
-          const newCoin: HalaCoin = {
+          const newCoin: TayebCoin = {
             symbol: contractCoin.id,
             name: contractCoin.name,
             decimals: 18,
@@ -100,7 +100,7 @@ async function main() {
         }
       }
 
-      const updatedConfig: HalaCoinsConfig = {
+      const updatedConfig: TayebCoinsConfig = {
         ...config,
         coins: updatedCoins,
         metadata: {
@@ -109,7 +109,7 @@ async function main() {
         },
       };
 
-      const configPath = path.join(__dirname, "..", "..", "config", "halaCoins.json");
+      const configPath = path.join(__dirname, "..", "..", "config", "tayebCoins.json");
       fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2) + "\n");
       
       console.log("✅ JSON config updated successfully!\n");

@@ -3,6 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
 import { DeployedContracts } from "../../config/types";
+import { 
+  connectToHydration, 
+  loadXcmConfig, 
+  getTokenInfo, 
+  encodeOmnipoolSell 
+} from "./encode-hydration-swap";
 
 const { ethers } = hre;
 
@@ -228,6 +234,34 @@ async function main() {
     await approveTx.wait();
     console.log("✅ Tokens approved");
     
+    // Encode Omnipool swap call
+    console.log("\n🔧 Encoding Omnipool swap call...");
+    const xcmCfg = loadXcmConfig();
+    const api = await connectToHydration(xcmCfg.hydration.rpcUrl);
+    
+    const sourceTokenInfo = getTokenInfo(xcmCfg, sourceTokenAddr);
+    const targetTokenInfo = getTokenInfo(xcmCfg, targetTokenAddr);
+    
+    console.log(`   Source: ${sourceTokenInfo.symbol} (Asset ID: ${sourceTokenInfo.assetId})`);
+    console.log(`   Target: ${targetTokenInfo.symbol} (Asset ID: ${targetTokenInfo.assetId})`);
+    
+    // Convert amounts to smallest unit based on token decimals
+    const amountInSmallestUnit = (parseFloat(amountStr) * Math.pow(10, sourceTokenInfo.decimals)).toString();
+    const minOutSmallestUnit = (parseFloat(minOutStr) * Math.pow(10, targetTokenInfo.decimals)).toString();
+    
+    const encodedCall = await encodeOmnipoolSell(
+      api,
+      sourceTokenInfo.assetId,
+      targetTokenInfo.assetId,
+      amountInSmallestUnit,
+      minOutSmallestUnit
+    );
+    
+    console.log(`   Encoded call: ${encodedCall.substring(0, 66)}...`);
+    
+    // Disconnect from Hydration
+    await api.disconnect();
+    
     // Initiate swap
     console.log("\n🚀 Initiating remote swap...");
     const tx = await crosschainSwapInitiator.initiateRemoteSwap(
@@ -235,7 +269,8 @@ async function main() {
       targetTokenAddr,
       amount,
       minOut,
-      deadline
+      deadline,
+      encodedCall
     );
     
     console.log(`   Transaction hash: ${tx.hash}`);
@@ -251,7 +286,7 @@ async function main() {
     const event = receipt.logs.find((log: any) => {
       try {
         const parsed = crosschainSwapInitiator.interface.parseLog(log);
-        return parsed?.name === "RemoteSwapInitiated";
+        return parsed?.name === "CrosschainSwapInitiated";
       } catch {
         return false;
       }
@@ -261,7 +296,7 @@ async function main() {
       const parsed = crosschainSwapInitiator.interface.parseLog(event);
       const swapId = parsed?.args[0];
       
-      console.log(`\n✅ Remote swap initiated!`);
+      console.log(`\n✅ Crosschain swap initiated!`);
       console.log(`   Swap ID: ${swapId}`);
       console.log(`   XCM Message Hash: ${parsed?.args[6]}`);
       

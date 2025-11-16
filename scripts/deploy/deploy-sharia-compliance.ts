@@ -2,16 +2,16 @@ import hre from "hardhat";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import halaCoinsConfig from "../../config/halaCoins.json";
+import tayebCoinsConfig from "../../config/tayebCoins.json";
 import deployedContractsConfig from "../../config/deployedContracts.json";
-import { HalaCoin, HalaCoinVariant, HalaCoinsConfig, DeployedContracts } from "../../config/types";
+import { TayebCoin, TayebCoinVariant, TayebCoinsConfig, DeployedContracts } from "../../config/types";
 import { buildTxOverrides, deployOrVerifyContract } from "../utils/deployHelpers";
 
 dotenv.config();
 
 const { ethers } = hre;
 
-function collectEntries(coin: HalaCoin) {
+function collectEntries(coin: TayebCoin) {
   const entries: Array<{
     symbol: string;
     name: string;
@@ -37,9 +37,23 @@ function collectEntries(coin: HalaCoin) {
       const moonbeamAddress = variant.addresses?.moonbeam ?? null;
       if (!moonbeamAddress) continue;
 
+      // Convert variant symbol from WBTC_WH to WBTC.wh format
+      // Extract the suffix (WH, XC, E, etc.) and convert to lowercase with dot
+      const variantSymbol = variant.symbol;
+      const underscoreIndex = variantSymbol.lastIndexOf('_');
+      let formattedSymbol: string;
+      
+      if (underscoreIndex > 0) {
+        const base = variantSymbol.substring(0, underscoreIndex);
+        const suffix = variantSymbol.substring(underscoreIndex + 1).toLowerCase();
+        formattedSymbol = `${base}.${suffix}`;
+      } else {
+        formattedSymbol = variantSymbol;
+      }
+
       entries.push({
-        symbol: variant.symbol,
-        name: variant.name ?? `${coin.name} (${variant.symbol})`,
+        symbol: formattedSymbol,
+        name: variant.name ?? `${coin.name} (${formattedSymbol})`,
         complianceReason: variant.complianceReason ?? coin.complianceReason,
         address: moonbeamAddress,
         isVariant: true,
@@ -53,7 +67,7 @@ function collectEntries(coin: HalaCoin) {
 
 async function registerCoins(
   shariaCompliance: any,
-  config: HalaCoinsConfig
+  config: TayebCoinsConfig
 ): Promise<{ registered: number; skipped: number }> {
   const registeredCoins = await shariaCompliance.getAllShariaCoins();
   const registeredSymbols = new Set(registeredCoins.map((c: any) => c.id));
@@ -117,7 +131,7 @@ async function registerCoins(
 }
 
 async function main() {
-  const config = halaCoinsConfig as HalaCoinsConfig;
+  const config = tayebCoinsConfig as TayebCoinsConfig;
   const contractsConfig = deployedContractsConfig as DeployedContracts;
 
   const [deployer] = await ethers.getSigners();
@@ -140,10 +154,10 @@ async function main() {
   console.log();
 
   console.log("📝 Registering coins in ShariaCompliance...");
-  const totalEntries = config.coins.reduce((count: number, coin: HalaCoin) => {
+  const totalEntries = config.coins.reduce((count: number, coin: TayebCoin) => {
     const base = coin.addresses?.moonbeam ? 1 : 0;
     const variants =
-      coin.variants?.filter((variant: HalaCoinVariant) => variant.addresses?.moonbeam).length ?? 0;
+      coin.variants?.filter((variant: TayebCoinVariant) => variant.addresses?.moonbeam).length ?? 0;
     return count + base + variants;
   }, 0);
   console.log(`📊 Entries with Moonbeam addresses: ${totalEntries}`);

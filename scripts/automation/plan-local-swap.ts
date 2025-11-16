@@ -1,7 +1,7 @@
 import stellaSwap from "@stellaswap/swap-sdk";
 import { ethers } from "ethers";
-import halaCoinsConfig from "../../config/halaCoins.json";
-import { HalaCoinsConfig } from "../../config/types";
+import tayebCoinsConfig from "../../config/tayebCoins.json";
+import { TayebCoinsConfig } from "../../config/types";
 
 interface CliOptions {
   tokenIn?: string;
@@ -34,8 +34,8 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 function usage(): never {
   console.log(`\nUsage: npm run plan:local-swap -- --token-in USDC_WH --token-out USDT --amount 100 --slippage-bps 100\n`);
   console.log("Options:");
-  console.log("  --token-in,  -i    Symbol or variant symbol from halaCoins.json");
-  console.log("  --token-out, -o    Symbol or variant symbol from halaCoins.json");
+  console.log("  --token-in,  -i    Symbol or variant symbol from tayebCoins.json");
+  console.log("  --token-out, -o    Symbol or variant symbol from tayebCoins.json");
   console.log("  --amount,    -a    Human-readable amount of the input token");
   console.log("  --raw-amount     Amount already in smallest units (overrides --amount)");
   console.log("  --slippage-bps   Slippage in basis points (default 100 = 1%)");
@@ -111,14 +111,14 @@ function normaliseSymbol(symbol: string): string {
   return symbol.trim().toUpperCase();
 }
 
-function lookupToken(symbol: string, config: HalaCoinsConfig): TokenLookupResult {
+function lookupToken(symbol: string, config: TayebCoinsConfig): TokenLookupResult {
   const normalized = normaliseSymbol(symbol);
 
   for (const coin of config.coins) {
     if (normaliseSymbol(coin.symbol) === normalized) {
       const address = coin.addresses?.moonbeam ?? null;
       if (!address) {
-        throw new Error(`Token ${coin.symbol} is missing a Moonbeam address in halaCoins.json`);
+        throw new Error(`Token ${coin.symbol} is missing a Moonbeam address in tayebCoins.json`);
       }
       return {
         symbol: coin.symbol,
@@ -135,7 +135,7 @@ function lookupToken(symbol: string, config: HalaCoinsConfig): TokenLookupResult
         if (normaliseSymbol(variant.symbol) === normalized) {
           const address = variant.addresses?.moonbeam ?? null;
           if (!address) {
-            throw new Error(`Variant ${variant.symbol} is missing a Moonbeam address in halaCoins.json`);
+            throw new Error(`Variant ${variant.symbol} is missing a Moonbeam address in tayebCoins.json`);
           }
           const decimals = variant.decimals ?? coin.decimals;
           return {
@@ -151,10 +151,10 @@ function lookupToken(symbol: string, config: HalaCoinsConfig): TokenLookupResult
     }
   }
 
-  throw new Error(`Unable to find token symbol '${symbol}' in halaCoins.json`);
+  throw new Error(`Unable to find token symbol '${symbol}' in tayebCoins.json`);
 }
 
-function resolveSymbolByAddress(address: string, config: HalaCoinsConfig): string | null {
+function resolveSymbolByAddress(address: string, config: TayebCoinsConfig): string | null {
   const target = address.toLowerCase();
   for (const coin of config.coins) {
     const coinAddress = coin.addresses?.moonbeam;
@@ -203,11 +203,82 @@ function extractRouter(result: any): string | null {
     }
   }
 
+  // Fallback: StellaSwap hybrid router on Moonbeam (if no router found in response)
+  // This is the default router address for StellaSwap on Moonbeam mainnet
+  if (result?.trades && Array.isArray(result.trades) && result.trades.length > 0) {
+    return "0x70085a09d30d6f8c4ecf6ee10120d1847383bb57";
+  }
+
   return null;
 }
 
 function extractPath(result: any): string[] | null {
   if (!result) return null;
+
+  // New format: path from trades array
+  if (Array.isArray(result?.trades) && result.trades.length > 0) {
+    const path: string[] = [];
+    const fromToken = result.fromToken && typeof result.fromToken === "string" ? result.fromToken.toLowerCase() : null;
+    const toToken = result.toToken && typeof result.toToken === "string" ? result.toToken : null;
+    
+    // Start with the fromToken if available
+    if (fromToken) {
+      path.push(result.fromToken as string);
+    }
+    
+    // Build path from trades sequentially
+    for (let tradeIdx = 0; tradeIdx < result.trades.length; tradeIdx++) {
+      const trade = result.trades[tradeIdx];
+      if (Array.isArray(trade?.path) && trade.path.length > 0) {
+        // Determine start index: skip first token if it matches the last token in our path
+        let startIdx = 0;
+        if (path.length > 0) {
+          const lastPathToken = path[path.length - 1].toLowerCase();
+          const firstTradeToken = typeof trade.path[0] === "string" 
+            ? trade.path[0].toLowerCase() 
+            : (trade.path[0]?.address?.toLowerCase() ?? "");
+          if (firstTradeToken === lastPathToken) {
+            startIdx = 1;
+          }
+        }
+        
+        // Add tokens from this trade's path
+        for (let i = startIdx; i < trade.path.length; i++) {
+          const token = trade.path[i];
+          const address = typeof token === "string" ? token : token?.address;
+          if (address && typeof address === "string" && address.startsWith("0x")) {
+            const addrLower = address.toLowerCase();
+            // Avoid duplicates (case-insensitive check)
+            if (!path.some(p => p.toLowerCase() === addrLower)) {
+              path.push(address);
+            }
+          }
+        }
+      }
+    }
+    
+    // Ensure we end with the toToken
+    if (toToken) {
+      const toTokenLower = toToken.toLowerCase();
+      const lastToken = path.length > 0 ? path[path.length - 1].toLowerCase() : null;
+      
+      if (lastToken !== toTokenLower) {
+        // Remove toToken if it exists elsewhere in path
+        const filtered = path.filter(p => p.toLowerCase() !== toTokenLower);
+        filtered.push(toToken);
+        if (filtered.length > 1) {
+          return filtered;
+        }
+      } else if (path.length > 1) {
+        // toToken is already at the end
+        return path;
+      }
+    }
+    
+    if (path.length > 1) {
+      return path;
+    }
+  }
 
   const rawCandidates = [
     result.path,
@@ -295,10 +366,38 @@ async function fetchQuote(
       slippageBps.toString()
     );
 
+    // Check if the SDK returned an error object instead of a quote
+    // The SDK sometimes returns AxiosError objects directly instead of throwing
+    if (quote && typeof quote === 'object' && quote.name === 'AxiosError') {
+      const errorMessage = quote.message ?? "Request failed with status code 500";
+      const statusCode = quote.response?.status ?? quote.status;
+      const statusText = quote.response?.statusText;
+      const responseData = quote.response?.data;
+      
+      console.warn("⚠️  StellaSwap API returned an error:");
+      console.warn("   Error:", errorMessage);
+      if (statusCode) console.warn("   HTTP Status:", statusCode);
+      if (statusText) console.warn("   Status Text:", statusText);
+      if (responseData) {
+        console.warn("   Response Data:", JSON.stringify(responseData, null, 2));
+      }
+      
+      throw new Error(`StellaSwap API error: ${errorMessage}${statusCode ? ` (HTTP ${statusCode})` : ''}`);
+    }
+
     const payload = quote?.result ?? quote;
 
+    // Check if the quote indicates failure
     if (!payload || quote?.isSuccess === false) {
-      const errorMessage = quote?.message ?? "Unknown error from StellaSwap router API";
+      const errorMessage = quote?.message ?? quote?.error ?? "Unknown error from StellaSwap router API";
+      const errorCode = quote?.code;
+      const errorDetails = quote?.errors;
+      
+      console.warn("⚠️  Quote indicates failure:");
+      console.warn("   Message:", errorMessage);
+      if (errorCode) console.warn("   Code:", errorCode);
+      if (errorDetails) console.warn("   Errors:", JSON.stringify(errorDetails, null, 2));
+      
       throw new Error(errorMessage);
     }
 
@@ -308,18 +407,55 @@ async function fetchQuote(
       });
     }
 
+    const path = extractPath(payload);
+    const router = extractRouter(payload);
+    const amountOut = extractAmountOut(payload);
+    
+    // Validate that path starts with fromToken and ends with toToken
+    if (path && path.length > 0) {
+      const fromToken = payload.fromToken?.toLowerCase();
+      const toToken = payload.toToken?.toLowerCase();
+      const pathStart = path[0]?.toLowerCase();
+      const pathEnd = path[path.length - 1]?.toLowerCase();
+      
+      if (fromToken && pathStart !== fromToken) {
+        console.warn(`⚠️  Path does not start with fromToken. Expected ${fromToken}, got ${pathStart}`);
+      }
+      if (toToken && pathEnd !== toToken) {
+        console.warn(`⚠️  Path does not end with toToken. Expected ${toToken}, got ${pathEnd}`);
+      }
+    }
+    
     return {
-      path: extractPath(payload),
-      router: extractRouter(payload),
-      amountOut: extractAmountOut(payload),
+      path,
+      router,
+      amountOut,
       raw: payload,
     };
   } catch (error: any) {
     const message = error?.message ?? error?.toString?.() ?? "Unknown error";
     console.warn("⚠️  Failed to fetch quote from StellaSwap SDK:", message);
-    if (error?.response?.data) {
-      console.warn("   Response payload:", JSON.stringify(error.response.data, null, 2));
+    
+    // Log detailed error information
+    if (error?.response) {
+      console.warn("   HTTP Status:", error.response?.status);
+      console.warn("   Status Text:", error.response?.statusText);
+      if (error.response?.data) {
+        console.warn("   Response payload:", JSON.stringify(error.response.data, null, 2));
+      }
+      if (error.response?.headers) {
+        console.warn("   Response headers:", JSON.stringify(error.response.headers, null, 2));
+      }
     }
+    
+    if (error?.request) {
+      console.warn("   Request config:", JSON.stringify({
+        url: error.config?.url,
+        method: error.config?.method,
+        params: error.config?.params,
+      }, null, 2));
+    }
+    
     if (suppressedErrors.length > 0) {
       suppressedErrors.forEach((entry) => {
         console.warn("   SDK log:", entry);
@@ -340,7 +476,7 @@ async function fetchQuote(
 async function main() {
   const options = parseArgs();
 
-  const config = halaCoinsConfig as HalaCoinsConfig;
+  const config = tayebCoinsConfig as TayebCoinsConfig;
 
   let tokenIn: TokenLookupResult;
   let tokenOut: TokenLookupResult;

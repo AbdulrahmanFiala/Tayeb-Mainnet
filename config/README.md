@@ -4,8 +4,8 @@ This directory contains centralized configuration files for the Tayeb platform.
 
 ## Files
 
-### `halaCoins.json`
-Single source of truth for all Initial Hala Coins configuration. This file:
+### `tayebCoins.json`
+Single source of truth for all Tayeb Coins configuration. This file:
 - Defines the canonical list of compliant assets with metadata
 - Supports per-asset `variants` so bridged/flavoured tokens can inherit metadata from their parent while providing unique symbols and addresses
 - Stores deployed token contract addresses (updated by deployment or sync scripts)
@@ -28,7 +28,7 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 
 ### `deploy/deploy-sharia-compliance.ts`
 - Deploys `ShariaCompliance`
-- Registers any base coins or variants from `halaCoins.json` that have Moonbeam addresses
+- Registers any base coins or variants from `tayebCoins.json` that have Moonbeam addresses
 - Updates `deployedContracts.json` with the contract address and metadata
 
 ### `deploy/deploy-crosschain-initiator.ts`
@@ -49,7 +49,7 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 
 ### `automation/sync-coins-from-contract.ts`
 - Reads all coins from ShariaCompliance contract
-- Updates `halaCoins.json`: Syncs coin data, sets `permissible` flags
+- Updates `tayebCoins.json`: Syncs coin data, sets `permissible` flags
 - Updates `deployedContracts.json`: Syncs token addresses
 
 ### `automation/listen-coin-events.ts`
@@ -58,6 +58,6 @@ For detailed instructions on adding/removing coins, syncing JSON files, and mana
 
 ### `automation/plan-local-swap.ts`
 - Queries StellaSwap's hybrid router via `@stellaswap/swap-sdk`
-- Resolves token addresses from `halaCoins.json`
+- Resolves token addresses from `tayebCoins.json`
 - Prints router hints and path arrays for use with `ShariaLocalSwap`
 - Exits with an error if the external SDK cannot supply a route (Tayeb never falls back to proprietary liquidity)

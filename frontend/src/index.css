@@ -1,0 +1,205 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0f1e19;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #0f1e19;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Tailwind Theme */
+@theme {
+  --color-primary: #40c399;
+  --color-accent: #40c399;
+  --color-background-dark: #0f1e19;
+  --color-surface: #1a3a2f;
+  --color-text-light: rgba(255, 255, 255, 0.87);
+  --color-text-muted: rgba(255, 255, 255, 0.6);
+
+  --font-display: system-ui, -apple-system, sans-serif;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Modal Container */
+.modal-container {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+/* Modal Card */
+.modal-card {
+  background-color: #1a3a2f;
+  border: 1px solid #23483c;
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem;
+  width: 100%;
+  max-width: 512px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Notification Container */
+.notification-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+/* Notification Toast */
+.notification-toast {
+  background-color: #1a3a2f;
+  border: 1px solid #23483c;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  min-width: 320px;
+  max-width: 400px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Status borders removed for cleaner look */
+
+/* Notification Spinner */
+.notification-spinner {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-ring {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(64, 195, 153, 0.2);
+  border-top-color: #40c399;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Button Spinner */
+.button-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(15, 30, 25, 0.3);
+  border-top-color: #0f1e19;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Modal */
+@media (max-width: 640px) {
+  .modal-card {
+    max-width: 100%;
+    margin: 1rem;
+  }
+
+  .notification-toast {
+    min-width: auto;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .notification-container {
+    right: 0;
+    left: 0;
+    padding: 0 1rem;
+  }
+}

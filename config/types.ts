@@ -1,8 +1,8 @@
 /**
- * Type definitions for Hala Coins configuration
+ * Type definitions for Tayeb Coins configuration
  */
 
-export interface HalaCoinVariant {
+export interface TayebCoinVariant {
   symbol: string;
   name?: string;
   decimals?: number;
@@ -15,7 +15,7 @@ export interface HalaCoinVariant {
   assetId?: number | null;
 }
 
-export interface HalaCoin {
+export interface TayebCoin {
   symbol: string;
   name: string;
   decimals: number;
@@ -26,11 +26,12 @@ export interface HalaCoin {
     moonbeam: string | null;
   };
   assetId?: number | null;
-  variants?: HalaCoinVariant[];
+  variants?: TayebCoinVariant[];
+  avgSlippagePercent?: number;
 }
 
-export interface HalaCoinsConfig {
-  coins: HalaCoin[];
+export interface TayebCoinsConfig {
+  coins: TayebCoin[];
   stablecoins: string[];
   metadata: {
     version: string;
@@ -40,30 +41,30 @@ export interface HalaCoinsConfig {
 }
 
 /**
- * Helper function to get non-stablecoin Hala Coins
+ * Helper function to get non-stablecoin Tayeb Coins
  */
-export function getNonStablecoins(config: HalaCoinsConfig): HalaCoin[] {
+export function getNonStablecoins(config: TayebCoinsConfig): TayebCoin[] {
   return config.coins.filter(coin => !config.stablecoins.includes(coin.symbol));
 }
 
 /**
  * Helper function to get stablecoins only
  */
-export function getStablecoins(config: HalaCoinsConfig): HalaCoin[] {
+export function getStablecoins(config: TayebCoinsConfig): TayebCoin[] {
   return config.coins.filter(coin => config.stablecoins.includes(coin.symbol));
 }
 
 /**
  * Helper function to find a coin by symbol
  */
-export function getCoinBySymbol(config: HalaCoinsConfig, symbol: string): HalaCoin | undefined {
+export function getCoinBySymbol(config: TayebCoinsConfig, symbol: string): TayebCoin | undefined {
   return config.coins.find(coin => coin.symbol === symbol);
 }
 
 /**
  * Helper function to get all coin symbols
  */
-export function getAllSymbols(config: HalaCoinsConfig): string[] {
+export function getAllSymbols(config: TayebCoinsConfig): string[] {
   return config.coins.map(coin => coin.symbol);
 }
 

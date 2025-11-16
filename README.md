@@ -75,7 +75,7 @@ Core registry managing Sharia-compliant token approvals. **Contract is source of
 - `getAllShariaCoins()` - Get all approved tokens
 - `requireShariaCompliant(coinId)` - Validation helper (reverts if not compliant)
 
-**Note:** Coins are registered programmatically from `config/halaCoins.json` during deployment. After deployment, use contract functions to add/remove coins, then sync JSON with `npm run sync:coins`.
+**Note:** Coins are registered programmatically from `config/tayebCoins.json` during deployment. After deployment, use contract functions to add/remove coins, then sync JSON with `npm run sync:coins`.
 
 ### ShariaLocalSwap.sol
 Token swapping with DEX integration and compliance validation.
@@ -191,7 +191,7 @@ For detailed usage, see [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md#debugging-failed
    - Update if you switch DEXes or use alternate liquidity sources
 
 2. **Access Deployed Addresses**:
-   - Token addresses: `config/halaCoins.json`
+   - Token addresses: `config/tayebCoins.json`
    - Contract addresses: `config/deployedContracts.json`
 
 3. **Integrate with Your App**:
@@ -247,7 +247,7 @@ Key takeaways:
 
 - ✅ The script uses `@stellaswap/swap-sdk` to request a quote with your chosen slippage.
 - ✅ If the SDK cannot return a route, the script stops and asks you to retry later—Tayeb will not execute swaps unless an external router SDK provides the path.
-- ✅ Paths are resolved against `halaCoins.json`, so the final hop is guaranteed to be a Sharia-listed asset.
+- ✅ Paths are resolved against `tayebCoins.json`, so the final hop is guaranteed to be a Sharia-listed asset.
 - ✅ You can pass `--dump` to inspect the raw response for advanced routing analysis.
 - ✅ Feed the printed `path` straight into Tayeb contracts while Tayeb handles the compliance checks on-chain.
 

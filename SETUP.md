@@ -65,9 +65,9 @@ All contract addresses and metadata are written back to `config/deployedContract
 
 ## 6. Register Tokens
 
-`scripts/deploy/deploy-sharia-compliance.ts` syncs `config/halaCoins.json` with the on-chain registry. To register additional assets later:
+`scripts/deploy/deploy-sharia-compliance.ts` syncs `config/tayebCoins.json` with the on-chain registry. To register additional assets later:
 
-1. Add the symbol + metadata to `halaCoins.json`
+1. Add the symbol + metadata to `tayebCoins.json`
 2. Run `npm run sync:coins`
 
 ## 7. Provide Swap Paths
@@ -89,7 +89,7 @@ Verification currently covers the deployed Tayeb contracts and any tokens listed
 ## 9. Troubleshooting
 
 - **`InvalidPath` errors** → ensure the first hop matches the source asset (`WETH` for DEV orders) and the last hop matches the destination token.
-- **`TokenNotRegistered`** → add the asset to `halaCoins.json`, sync, then re-try.
+- **`TokenNotRegistered`** → add the asset to `tayebCoins.json`, sync, then re-try.
 - **Router pathing / SDK downtime** → Tayeb relies entirely on third-party router SDKs. If `plan-local-swap` reports a `500` or “no route found”, contact the DEX (e.g. StellaSwap) or wait for the service to recover—do not attempt manual fallbacks.
 
 For advanced workflows (Moonbeam mainnet and XCM), see the docs in `docs/` and `MAINNET_DEPLOYMENT_CHECKLIST.md`.

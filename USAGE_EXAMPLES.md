@@ -16,7 +16,7 @@ After deployment, all token addresses are automatically registered. Access deplo
 
 ```typescript
 // Frontend example
-import halaCoins from './config/halaCoins.json';
+import tayebCoins from './config/tayebCoins.json';
 import deployedContracts from './config/deployedContracts.json';
 
 // Connect to contracts
@@ -27,9 +27,9 @@ const shariaSwap = new ethers.Contract(
 );
 
 // Get token addresses
-const btcAddress = halaCoins.coins.find(c => c.symbol === "BTC")?.addresses.moonbeam;
-const ethAddress = halaCoins.coins.find(c => c.symbol === "ETH")?.addresses.moonbeam;
-const usdtAddress = halaCoins.coins.find(c => c.symbol === "USDT")?.addresses.moonbeam;
+const btcAddress = tayebCoins.coins.find(c => c.symbol === "BTC")?.addresses.moonbeam;
+const ethAddress = tayebCoins.coins.find(c => c.symbol === "ETH")?.addresses.moonbeam;
+const usdtAddress = tayebCoins.coins.find(c => c.symbol === "USDT")?.addresses.moonbeam;
 ```
 
 ### React/Next.js Example
@@ -87,7 +87,7 @@ shariaCompliance.updateComplianceStatus("TOKEN", false, "Reason for removal");
 npm run sync:coins
 ```
 - Reads all coins from contract
-- Updates `halaCoins.json` to match contract state
+- Updates `tayebCoins.json` to match contract state
 - Adds new coins, marks removed ones as `permissible: false`
 - Updates token addresses in `deployedContracts.json`
 
@@ -113,7 +113,7 @@ npm run listen:events
 4. JSON automatically updated
 
 **Method 2: Via JSON First**
-1. Add coin to `halaCoins.json`
+1. Add coin to `tayebCoins.json`
 2. Deploy token: `npm run deploy:tokens` (deploys new token)
 3. Ensure liquidity exists on your chosen router before enabling swaps for the token
 4. Run `npm run deploy:core` (registers new coin in ShariaCompliance)
@@ -155,7 +155,7 @@ console.log("Coin registered!");
 ```typescript
 // Swap DEV for USDT (Sharia-compliant)
 // Get addresses from JSON configs
-import halaCoins from './config/halaCoins.json';
+import tayebCoins from './config/tayebCoins.json';
 import deployedContracts from './config/deployedContracts.json';
 
 const shariaSwap = new ethers.Contract(
@@ -164,7 +164,7 @@ const shariaSwap = new ethers.Contract(
   provider
 );
 
-const usdtCoin = halaCoins.coins.find(c => c.symbol === "USDT");
+const usdtCoin = tayebCoins.coins.find(c => c.symbol === "USDT");
 const USDT_ADDRESS = usdtCoin?.addresses.moonbeam;
 
 const amountIn = ethers.parseEther("1.0"); // 1 DEV
@@ -187,7 +187,7 @@ console.log("Swap completed!");
 ```typescript
 // Swap BTC for ETH
 // Note: If no direct BTC/ETH pair exists, this will automatically route through USDC (BTC → USDC → ETH)
-import halaCoins from './config/halaCoins.json';
+import tayebCoins from './config/tayebCoins.json';
 import deployedContracts from './config/deployedContracts.json';
 
 const shariaSwap = new ethers.Contract(
@@ -198,8 +198,8 @@ const shariaSwap = new ethers.Contract(
 
 const WETH_ADDRESS = deployedContracts.amm.weth!;
 
-const btcCoin = halaCoins.coins.find(c => c.symbol === "BTC");
-const ethCoin = halaCoins.coins.find(c => c.symbol === "ETH");
+const btcCoin = tayebCoins.coins.find(c => c.symbol === "BTC");
+const ethCoin = tayebCoins.coins.find(c => c.symbol === "ETH");
 
 const BTC_ADDRESS = btcCoin?.addresses.moonbeam;
 const ETH_ADDRESS = ethCoin?.addresses.moonbeam;
@@ -209,7 +209,7 @@ const btcToken = new ethers.Contract(BTC_ADDRESS, ERC20_ABI, signer);
 await btcToken.approve(shariaSwap.target, ethers.MaxUint256);
 
 // Build an explicit route (e.g. BTC -> USDC -> ETH)
-const usdcCoin = halaCoins.coins.find(c => c.symbol === "USDC");
+const usdcCoin = tayebCoins.coins.find(c => c.symbol === "USDC");
 const USDC_ADDRESS = usdcCoin?.addresses.moonbeam;
 const amountIn = ethers.parseUnits("0.1", 8); // 0.1 BTC (8 decimals)
 const path = [BTC_ADDRESS, USDC_ADDRESS, ETH_ADDRESS];
@@ -273,7 +273,7 @@ const shariaDCA = new ethers.Contract(
   signer
 );
 
-const usdtCoin = halaCoins.coins.find(c => c.symbol === "USDT");
+const usdtCoin = tayebCoins.coins.find(c => c.symbol === "USDT");
 const USDT_ADDRESS = usdtCoin?.addresses.moonbeam!;
 
 const amountPerInterval = ethers.parseEther("1"); // 1 DEV per interval
@@ -326,9 +326,9 @@ const tx = await shariaDCA.createDCAOrderWithDEV(
 
 ```typescript
 // DCA: Invest 100 USDC into BTC every day for 30 days
-import halaCoins from './config/halaCoins.json';
+import tayebCoins from './config/tayebCoins.json';
 
-const usdcCoin = halaCoins.coins.find(c => c.symbol === "USDC");
+const usdcCoin = tayebCoins.coins.find(c => c.symbol === "USDC");
 const USDC_ADDRESS = usdcCoin?.addresses.moonbeam;
 
 // First, approve ShariaDCA to spend your USDC
@@ -380,7 +380,7 @@ const tx = await shariaDCA.createDCAOrderWithToken(
 
 // Example 2: BTC → SOL DCA
 // Explicit path through USDC
-const solCoin = halaCoins.coins.find(c => c.symbol === "SOL");
+const solCoin = tayebCoins.coins.find(c => c.symbol === "SOL");
 const SOL_ADDRESS = solCoin?.addresses.moonbeam!;
 const btcToSolPath = [BTC_ADDRESS!, USDC_ADDRESS!, SOL_ADDRESS];
 const tx2 = await shariaDCA.createDCAOrderWithToken(

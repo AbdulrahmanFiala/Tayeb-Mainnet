@@ -50,10 +50,11 @@
   },
   "dependencies": {
     "@moonbeam-network/api-augment": "^0.2700.0",
-    "@moonbeam-network/xcm-sdk": "^2.7.10",
+    "@moonbeam-network/xcm-sdk": "^2.3.0",
     "@openzeppelin/contracts": "^5.0.1",
     "@polkadot/api": "^12.4.2",
     "@polkadot/api-augment": "^12.4.2",
+    "@polkadot/apps-config": "^0.168.1",
     "@stellaswap/swap-sdk": "^0.0.16",
     "dotenv": "^16.3.1"
   }

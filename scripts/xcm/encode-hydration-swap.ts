@@ -14,6 +14,13 @@ interface XcmConfig {
     omnipoolPalletName: string;
     assetRegistry: Record<string, number>;
   };
+  tokenMapping: {
+    moonbeamToHydration: Record<string, {
+      symbol: string;
+      assetId: number | null;
+      decimals: number;
+    }>;
+  };
 }
 
 /**
@@ -29,12 +36,38 @@ function loadXcmConfig(): XcmConfig {
  * Connect to Hydration parachain
  */
 async function connectToHydration(rpcUrl: string): Promise<ApiPromise> {
-  console.log(`Connecting to Hydration at ${rpcUrl}...`);
-  const wsProvider = new WsProvider(rpcUrl);
-  const api = await ApiPromise.create({ provider: wsProvider });
-  await api.isReady;
-  console.log('✅ Connected to Hydration');
-  return api;
+  const endpoints = [
+    rpcUrl,
+    'wss://hydradx-rpc.play.hydration.cloud/',
+    'wss://hydradx-parachain.api.onfinality.io/public-ws',
+    'wss://hydration-rpc.dwellir.com',
+  ].filter(Boolean);
+
+  const connectWithTimeout = async (endpoint: string, timeoutMs = 15000) => {
+    console.log(`Connecting to Hydration at ${endpoint}...`);
+    const ws = new WsProvider(endpoint);
+    const apiPromise = ApiPromise.create({ provider: ws }).then(async (api) => {
+      await api.isReady;
+      return api;
+    });
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout connecting to ${endpoint}`)), timeoutMs)
+    );
+    return Promise.race([apiPromise, timeout]) as Promise<ApiPromise>;
+  };
+
+  let lastError: unknown = null;
+  for (const ep of endpoints) {
+    try {
+      const api = await connectWithTimeout(ep);
+      console.log('✅ Connected to Hydration');
+      return api;
+    } catch (e) {
+      console.warn(`⚠️  Failed to connect via ${ep}:`, (e as Error)?.message || e);
+      lastError = e;
+    }
+  }
+  throw new Error(`All Hydration RPC endpoints failed. Last error: ${(lastError as Error)?.message || lastError}`);
 }
 
 /**
@@ -46,7 +79,7 @@ async function connectToHydration(rpcUrl: string): Promise<ApiPromise> {
  * @param minBuyAmount Minimum amount to receive
  * @returns Encoded call data as hex string
  */
-export async function encodeOmnipoolSell(
+async function encodeOmnipoolSell(
   api: ApiPromise,
   assetIn: number,
   assetOut: number,
@@ -78,7 +111,7 @@ export async function encodeOmnipoolSell(
  * @param maxSellAmount Maximum amount to spend
  * @returns Encoded call data as hex string
  */
-export async function encodeOmnipoolBuy(
+async function encodeOmnipoolBuy(
   api: ApiPromise,
   assetOut: number,
   assetIn: number,
@@ -110,6 +143,46 @@ function getAssetId(config: XcmConfig, symbol: string): number {
     throw new Error(`Asset ${symbol} not found in registry`);
   }
   return assetId;
+}
+
+/**
+ * Get asset ID from Moonbeam token address
+ */
+function getAssetIdFromAddress(config: XcmConfig, address: string): number {
+  const normalizedAddress = address.toLowerCase();
+  const mapping = config.tokenMapping.moonbeamToHydration[normalizedAddress];
+  
+  if (!mapping) {
+    throw new Error(`Token address ${address} not found in Moonbeam to Hydration mapping`);
+  }
+  
+  if (mapping.assetId === null) {
+    throw new Error(`Token ${mapping.symbol} at ${address} is not available on Hydration Omnipool`);
+  }
+  
+  return mapping.assetId;
+}
+
+/**
+ * Get token info from Moonbeam address
+ */
+function getTokenInfo(config: XcmConfig, address: string): { symbol: string; assetId: number; decimals: number } {
+  const normalizedAddress = address.toLowerCase();
+  const mapping = config.tokenMapping.moonbeamToHydration[normalizedAddress];
+  
+  if (!mapping) {
+    throw new Error(`Token address ${address} not found in Moonbeam to Hydration mapping`);
+  }
+  
+  if (mapping.assetId === null) {
+    throw new Error(`Token ${mapping.symbol} at ${address} is not available on Hydration Omnipool`);
+  }
+  
+  return {
+    symbol: mapping.symbol,
+    assetId: mapping.assetId,
+    decimals: mapping.decimals
+  };
 }
 
 /**
@@ -179,7 +252,15 @@ if (require.main === module) {
 }
 
 // Export functions for use in other scripts
-export { connectToHydration, loadXcmConfig, getAssetId };
+export { 
+  connectToHydration, 
+  loadXcmConfig, 
+  getAssetId, 
+  getAssetIdFromAddress,
+  getTokenInfo,
+  encodeOmnipoolSell,
+  encodeOmnipoolBuy
+};
 
 
 

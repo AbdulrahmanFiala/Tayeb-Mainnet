@@ -14,7 +14,7 @@ The deployment flow is modular:
 - A single wrapper remains for full deployments:
   - `scripts/deploy/deploy-all.ts` (runs every deploy script in sequence)
 
-All addresses are written to `config/deployedContracts.json`. Tokens are registered from `config/halaCoins.json` automatically.
+All addresses are written to `config/deployedContracts.json`. Tokens are registered from `config/tayebCoins.json` automatically.
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ npm run deploy:mainnet             # Moonbeam mainnet (⚠️ real GLMR)
 ```bash
 npx hardhat run scripts/deploy/deploy-sharia-compliance.ts --network moonbeam
 ```
-This deploys the registry and registers every coin/variant in `halaCoins.json` that has a Moonbeam address.
+This deploys the registry and registers every coin/variant in `tayebCoins.json` that has a Moonbeam address.
 
 ### 2. Deploy CrosschainSwapInitiator
 ```bash
@@ -66,7 +66,7 @@ Installs the DCA engine against the same router.
 > Prefer a wrapper? `npx hardhat run scripts/deploy/deploy-all.ts --network moonbeam` runs all four steps sequentially.
 
 ### 3. Update Token Registry (Optional)
-Add new assets to `halaCoins.json` and run:
+Add new assets to `tayebCoins.json` and run:
 ```bash
 npm run sync:coins -- --network moonbeam
 ```

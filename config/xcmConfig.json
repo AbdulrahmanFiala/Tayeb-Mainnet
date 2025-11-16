@@ -1,48 +1,23 @@
 {
   "hydration": {
-    "name": "Hydration Mainnet",
-    "parachainId": 2034,
-    "rpcUrl": "wss://rpc.hydradx.cloud",
-    "omnipoolPalletIndex": 75,
-    "omnipoolPalletName": "Omnipool",
-    "sellCallIndex": 0,
-    "buyCallIndex": 1,
+    "rpcUrl": "wss://hydradx-rpc.play.hydration.cloud/",
+    "omnipoolPalletName": "omnipool",
     "assetRegistry": {
       "HDX": 0,
-      "DOT": 5,
-      "USDT": 10,
-      "USDC": 21,
-      "DAI": 18,
-      "WETH": 20,
-      "WBTC": 19,
-      "GLMR": 16
-    },
-    "sovereignAccount": "0x7369626cd1070000000000000000000000000000000000000000000000000000",
-    "minXcmFee": "100000000000000000",
-    "minXcmGas": 1000000000
+      "DOT": 7,
+      "USDT": 1984,
+      "USDC": 1337,
+      "GLMR": 2287
+    }
   },
-  "moonbeam": {
-    "name": "Moonbeam",
-    "parachainId": 2004,
-    "chainId": 1284,
-    "rpcUrl": "https://rpc.api.moonbeam.network",
-    "wsUrl": "wss://wss.api.moonbeam.network",
-    "xcmTransactorPrecompile": "0x0000000000000000000000000000000000000806",
-    "relayChain": "polkadot"
-  },
-  "xcmConfig": {
-    "defaultWeightLimit": 1000000000,
-    "defaultFeeAmount": "100000000000000000",
-    "maxRetries": 3,
-    "retryDelayMs": 5000,
-    "xcmVersion": 3
-  },
-  "notes": {
-    "parachainIds": "Hydration: 2034, Moonbeam: 2004",
-    "xcmTransactor": "Moonbeam precompile at 0x0806 for sending XCM messages",
-    "assetRegistry": "Asset IDs on Hydration Omnipool for cross-chain swaps",
-    "sovereignAccount": "Moonbeam's sovereign account on Hydration (parachain 2004)",
-    "fees": "Minimum XCM fee: 0.1 token (in Wei), Weight: 1 billion units",
-    "hrmpChannels": "HRMP channels between Moonbeam (2004) and Hydration (2034) are open on Polkadot mainnet"
+  "tokenMapping": {
+    "moonbeamToHydration": {
+      "0xacc15dc74880c9944775448304b263d191c6077f": { "symbol": "GLMR", "assetId": 2287, "decimals": 18 },
+      "0xffffffff1fcacbd218edc0eba20fc2308c778080": { "symbol": "DOT", "assetId": 7, "decimals": 10 },
+      "0xa649b64dbdbcf3186cde2943ca7be2239223a82e": { "symbol": "USDT", "assetId": 1984, "decimals": 6 },
+      "0x931715fee2d06333043d11f658c8ce934ac61d0c": { "symbol": "USDC", "assetId": 1337, "decimals": 6 }
+    }
   }
 }
+
+

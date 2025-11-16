@@ -10,20 +10,26 @@ This guide explains how to use Tayeb's cross-chain swap functionality to execute
 ┌─────────────────────────────────────────────────────────────────┐
 │                 Moonbeam (Mainnet)                             │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │  User Wallet                                             │   │
+│  │  User Wallet / Frontend                                  │   │
 │  │    ↓                                                     │   │
-│  │  ShariaCompliance (validates target token)               │   │
+│  │  1. Polkadot.js API (connects to Hydration RPC)         │   │
+│  │     → Encodes Omnipool call (SCALE encoding)            │   │
 │  │    ↓                                                     │   │
-│  │  CrosschainSwapInitiator (locks source tokens, builds XCM)   │   │
+│  │  2. ShariaCompliance (validates target token)            │   │
 │  │    ↓                                                     │   │
-│  │  XCM Transactor Precompile (0x0806)                      │   │
+│  │  3. CrosschainSwapInitiator                              │   │
+│  │     → Receives pre-encoded call                          │   │
+│  │     → Locks source tokens                                │   │
+│  │     → Builds XCM message with encoded call               │   │
+│  │    ↓                                                     │   │
+│  │  4. XCM Transactor Precompile (0x0806)                   │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                             │
-                            │ XCM Message
+                            │ XCM Message (with SCALE-encoded call)
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│         Relay Chain (Polkadot Mainnet / Rococo Testnet)         │
+│         Relay Chain (Polkadot Mainnet)                          │
 │                Routes & schedules XCM execution                 │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -33,7 +39,7 @@ This guide explains how to use Tayeb's cross-chain swap functionality to execute
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  Receives XCM Message                                    │   │
 │  │    ↓                                                     │   │
-│  │  Omnipool Pallet (executes swap)                         │   │
+│  │  Omnipool Pallet (executes SCALE-encoded swap)           │   │
 │  │    ↓                                                     │   │
 │  │  XCM Transfer (returns swapped asset)                    │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -45,6 +51,13 @@ This guide explains how to use Tayeb's cross-chain swap functionality to execute
 │             User receives swapped tokens back on Moonbeam       │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Key Changes (v2.0)
+
+- **Off-chain encoding**: Omnipool calls are now SCALE-encoded off-chain using Polkadot.js API
+- **Contract accepts pre-encoded calls**: `CrosschainSwapInitiator.initiateRemoteSwap()` now requires a `bytes calldata encodedOmnipoolCall` parameter
+- **Token address mapping**: `xcmConfig.json` maps Moonbeam addresses to Hydration asset IDs
+- **Improved reliability**: Proper SCALE encoding ensures XCM messages are correctly executed on Hydration
 
 ## Prerequisites
 
@@ -178,6 +191,12 @@ The script will:
 
 ```typescript
 import { ethers } from "hardhat";
+import { 
+  connectToHydration, 
+  loadXcmConfig, 
+  getTokenInfo, 
+  encodeOmnipoolSell 
+} from "./scripts/xcm/encode-hydration-swap";
 
 async function executeRemoteSwap() {
   const [signer] = await ethers.getSigners();
@@ -188,13 +207,36 @@ async function executeRemoteSwap() {
     "0x..." // Address from deployedContracts.json
   );
   
-  // Token addresses
-  const sourceToken = "0x..."; // USDT (XC-20) on Moonbeam
-  const targetToken = "0x..."; // HDX on Hydration
+  // Token addresses (on Moonbeam)
+  const sourceToken = "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"; // USDT
+  const targetToken = "0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080"; // DOT
   
-  // Amounts (in wei)
-  const amount = ethers.parseEther("100"); // 100 USDT
-  const minOut = ethers.parseEther("50"); // Min 50 HDX
+  // Load XCM config and connect to Hydration
+  const xcmConfig = loadXcmConfig();
+  const api = await connectToHydration(xcmConfig.hydration.rpcUrl);
+  
+  // Get token info and asset IDs
+  const sourceInfo = getTokenInfo(xcmConfig, sourceToken);
+  const targetInfo = getTokenInfo(xcmConfig, targetToken);
+  
+  // Amounts in smallest unit
+  const amountIn = (100 * Math.pow(10, sourceInfo.decimals)).toString(); // 100 USDT
+  const minAmountOut = (10 * Math.pow(10, targetInfo.decimals)).toString(); // Min 10 DOT
+  
+  // Encode Omnipool swap call (SCALE encoding)
+  const encodedCall = await encodeOmnipoolSell(
+    api,
+    sourceInfo.assetId,
+    targetInfo.assetId,
+    amountIn,
+    minAmountOut
+  );
+  
+  await api.disconnect();
+  
+  // Amounts for contract (in wei for ERC20 approval)
+  const amount = ethers.parseUnits("100", sourceInfo.decimals);
+  const minOut = ethers.parseUnits("10", targetInfo.decimals);
   
   // Deadline (1 hour from now)
   const deadline = Math.floor(Date.now() / 1000) + 3600;
@@ -203,29 +245,38 @@ async function executeRemoteSwap() {
   const token = await ethers.getContractAt("IERC20", sourceToken);
   await token.approve(remoteSwapInitiator.address, amount);
   
-  // Initiate swap
+  // Initiate swap with encoded call
   const tx = await remoteSwapInitiator.initiateRemoteSwap(
     sourceToken,
     targetToken,
     amount,
     minOut,
-    deadline
+    deadline,
+    encodedCall // Pre-encoded Omnipool call
   );
   
   const receipt = await tx.wait();
   console.log("Swap initiated:", receipt.hash);
   
   // Get swap ID from event
-  const event = receipt.logs.find(log => 
-    log.topics[0] === remoteSwapInitiator.interface.getEvent("RemoteSwapInitiated").topicHash
-  );
+  const event = receipt.logs.find(log => {
+    try {
+      const parsed = remoteSwapInitiator.interface.parseLog(log);
+      return parsed?.name === "CrosschainSwapInitiated";
+    } catch {
+      return false;
+    }
+  });
   
-  const swapId = event.topics[1];
-  console.log("Swap ID:", swapId);
-  
-  // Monitor status
-  const swap = await remoteSwapInitiator.getSwap(swapId);
-  console.log("Status:", swap.status); // 0=Pending, 1=Initiated, 2=Completed, 3=Failed
+  if (event) {
+    const parsed = remoteSwapInitiator.interface.parseLog(event);
+    const swapId = parsed.args[0];
+    console.log("Swap ID:", swapId);
+    
+    // Monitor status
+    const swap = await remoteSwapInitiator.getSwap(swapId);
+    console.log("Status:", swap.status); // 0=Pending, 1=Initiated, 2=Completed, 3=Failed
+  }
 }
 ```
 
@@ -259,16 +310,49 @@ The Omnipool on Hydration supports multiple assets. Check `config/xcmConfig.json
 
 ### Encoding Swap Calls
 
-To properly encode Omnipool calls for XCM execution:
+**Important:** The `CrosschainSwapInitiator` contract requires pre-encoded Omnipool calls using proper SCALE encoding. This ensures compatibility with Substrate-based chains like Hydration.
+
+#### Why SCALE Encoding?
+
+Substrate chains use SCALE (Simple Concatenated Aggregate Little-Endian) encoding for all runtime calls. EVM's ABI encoding is incompatible, so we use the Polkadot.js API to generate proper SCALE-encoded call data off-chain.
+
+#### Token Address Mapping
+
+The `config/xcmConfig.json` file contains a mapping of Moonbeam token addresses to Hydration asset IDs:
+
+```json
+{
+  "tokenMapping": {
+    "moonbeamToHydration": {
+      "0xffffffffea09fb06d082fd1275cd48b191cbcd1d": { 
+        "symbol": "USDT", 
+        "assetId": 10, 
+        "decimals": 6 
+      },
+      "0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080": { 
+        "symbol": "DOT", 
+        "assetId": 5, 
+        "decimals": 10 
+      }
+    }
+  }
+}
+```
+
+This mapping allows the scripts to automatically resolve Moonbeam addresses to Hydration asset IDs.
+
+#### Manual Encoding (for testing)
+
+To manually encode Omnipool calls:
 
 ```bash
 npx hardhat run scripts/xcm/encode-hydration-swap.ts
 ```
 
 This script:
-1. Connects to Hydration testnet
-2. Encodes `omnipool.sell()` and `omnipool.buy()` calls
-3. Outputs hex-encoded call data for XCM Transact
+1. Connects to Hydration mainnet via RPC
+2. Uses Polkadot.js API to encode `omnipool.sell()` and `omnipool.buy()` calls
+3. Outputs hex-encoded SCALE call data
 
 **Example output:**
 ```
@@ -279,6 +363,16 @@ This script:
    Min Buy Amount: 1000000000000
    Encoded: 0x4b00...
 ```
+
+#### Automatic Encoding (in swap scripts)
+
+The `initiate-remote-swap.ts` script automatically:
+1. Looks up token addresses in the mapping
+2. Connects to Hydration RPC
+3. Encodes the Omnipool call
+4. Passes the encoded call to the contract
+
+You don't need to manually encode calls when using the interactive script.
 
 ### Swap Types
 

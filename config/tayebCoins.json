@@ -27,7 +27,7 @@
           "decimals": 8,
           "addresses": {
             "moonbeam": "0xffffffff1b4bb1ac5749f73d866ffc91a3432c47"
-      },
+          },
           "assetId": null
         },
         {
@@ -39,7 +39,8 @@
           },
           "assetId": null
         }
-      ]
+      ],
+      "avgSlippagePercent": 1.5
     },
     {
       "symbol": "ETH",
@@ -71,7 +72,8 @@
           },
           "assetId": null
         }
-      ]
+      ],
+      "avgSlippagePercent": 1.5
     },
     {
       "symbol": "USDT",
@@ -83,7 +85,8 @@
         "moonbeam": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 0.5
     },
     {
       "symbol": "XRP",
@@ -95,7 +98,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "BNB",
@@ -107,7 +111,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "SOL",
@@ -119,7 +124,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "DOT",
@@ -142,7 +148,8 @@
           },
           "assetId": null
         }
-      ]
+      ],
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "GLMR",
@@ -154,7 +161,8 @@
         "moonbeam": "0xacc15dc74880c9944775448304b263d191c6077f"
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 1
     },
     {
       "symbol": "USDC",
@@ -195,7 +203,8 @@
           },
           "assetId": null
         }
-      ]
+      ],
+      "avgSlippagePercent": 0.5
     },
     {
       "symbol": "TRX",
@@ -207,7 +216,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "ADA",
@@ -219,7 +229,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "LINK",
@@ -231,7 +242,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "BCH",
@@ -243,7 +255,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "LEO",
@@ -255,7 +268,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "XLM",
@@ -267,7 +281,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "SUI",
@@ -279,7 +294,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "HBAR",
@@ -291,7 +307,8 @@
         "moonbeam": null
       },
       "assetId": null,
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "AVAX",
@@ -302,7 +319,8 @@
       "addresses": {
         "moonbeam": null
       },
-      "permissible": true
+      "permissible": true,
+      "avgSlippagePercent": 2.5
     },
     {
       "symbol": "FIL",
@@ -325,7 +343,8 @@
           },
           "assetId": null
         }
-      ]
+      ],
+      "avgSlippagePercent": 2.5
     }
   ],
   "stablecoins": [

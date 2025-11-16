@@ -1,0 +1,20 @@
+{
+  "name": "paraspell-sdk-runner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@paraspell/sdk": "^11.0.0",
+    "polkadot-api": "^1.20.6",
+    "viem": "^2.39.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "paraspell-runner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@paraspell/xcm-tools": "github:paraspell/xcm-tools",
+    "viem": "^2.39.0",
+    "ethers": "^6.12.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "dotenv": "^16.4.5"
+  }
+}
+
